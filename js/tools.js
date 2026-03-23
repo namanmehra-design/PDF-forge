@@ -532,7 +532,7 @@ const PDFTools = (function() {
     PF.showProg(10);
     try {
       const bytes = await PF.readBuf(PF.files[0]);
-      const pdf = await pdfjsLib.getDocument({data:bytes}).promise;
+      const pdf = await pdfjsLib.getDocument({data:new Uint8Array(bytes)}).promise;
       const scale = parseInt(document.getElementById('jpgQ')?.value || '2');
       const zip = new JSZip(); const total = pdf.numPages;
       for (let i=1;i<=total;i++) {
@@ -661,7 +661,7 @@ const PDFTools = (function() {
   async function initOrganizer() {
     if (!PF.files.length) return;
     orgBytes = await PF.readBuf(PF.files[0]);
-    orgPdf = await pdfjsLib.getDocument({data:orgBytes}).promise;
+    orgPdf = await pdfjsLib.getDocument({data:new Uint8Array(orgBytes)}).promise;
     orgPages = Array.from({length:orgPdf.numPages}, (_,i) => ({index:i, rotation:0, sel:false}));
     renderOrgGrid();
   }
@@ -722,7 +722,7 @@ const PDFTools = (function() {
     PF.showProg(10);
     try {
       const bytes = await PF.readBuf(PF.files[0]);
-      const pdfJs = await pdfjsLib.getDocument({data:bytes}).promise;
+      const pdfJs = await pdfjsLib.getDocument({data:new Uint8Array(bytes)}).promise;
       const doc = await PDFLib.PDFDocument.load(bytes);
       const total = doc.getPageCount();
       let redactCount = 0;
@@ -779,7 +779,7 @@ const PDFTools = (function() {
     PF.showProg(10);
     try {
       const bytes = await PF.readBuf(PF.files[0]);
-      const pdf = await pdfjsLib.getDocument({data:bytes}).promise;
+      const pdf = await pdfjsLib.getDocument({data:new Uint8Array(bytes)}).promise;
       let allText = '';
       for (let i=1; i<=Math.min(pdf.numPages, 15); i++) {
         const pg = await pdf.getPage(i);
@@ -866,7 +866,7 @@ const PDFTools = (function() {
         }
         case 'pdf-to-word': {
           const bytes = await PF.readBuf(PF.files[0]);
-          const pdf = await pdfjsLib.getDocument({data:bytes}).promise;
+          const pdf = await pdfjsLib.getDocument({data:new Uint8Array(bytes)}).promise;
           let allText = '';
           for (let i=1;i<=pdf.numPages;i++) {
             const pg = await pdf.getPage(i); const c = await pg.getTextContent();
@@ -891,7 +891,7 @@ const PDFTools = (function() {
         }
         case 'pdf-to-excel': {
           const bytes = await PF.readBuf(PF.files[0]);
-          const pdf = await pdfjsLib.getDocument({data:bytes}).promise;
+          const pdf = await pdfjsLib.getDocument({data:new Uint8Array(bytes)}).promise;
           let csvRows = [];
           for (let i=1;i<=pdf.numPages;i++) {
             const pg = await pdf.getPage(i); const c = await pg.getTextContent();
@@ -917,7 +917,7 @@ const PDFTools = (function() {
         }
         case 'pdf-to-pptx': {
           const bytes = await PF.readBuf(PF.files[0]);
-          const pdf = await pdfjsLib.getDocument({data:bytes}).promise;
+          const pdf = await pdfjsLib.getDocument({data:new Uint8Array(bytes)}).promise;
           const zip = new JSZip();
           const total = pdf.numPages;
           for (let i=1;i<=total;i++) {
