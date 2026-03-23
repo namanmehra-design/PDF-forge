@@ -3,515 +3,75 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PDFForge</title>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics-compat.js"></script>
+<title>PDFForge - Every PDF Tool, Free Forever</title>
+<meta name="description" content="Free online PDF tools. Merge, split, compress, convert, edit, sign, watermark PDFs. All processing happens in your browser.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect x='3' y='2' width='20' height='26' rx='3' fill='%233b82f6' opacity='.7'/><rect x='9' y='4' width='20' height='26' rx='3' fill='%233b82f6'/></svg>">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-<style>
-*{margin:0;padding:0;box-sizing:border-box}
-:root{
---bg:#08090d;--bg2:#0d0f14;--bg3:#12141c;--bg4:#181b25;
---glass:rgba(18,20,28,.72);--glass2:rgba(24,27,37,.65);--glass-border:rgba(255,255,255,.06);--glass-border2:rgba(255,255,255,.1);
---t1:#e8eaf0;--t2:#9ba2b4;--t3:#5c6378;--t4:#3a3f50;
---accent:#4f8cff;--accent2:#3b7aed;--accentg:rgba(79,140,255,.1);--accentg2:rgba(79,140,255,.06);
---red:#f04848;--redg:rgba(240,72,72,.1);
---green:#34d399;--greeng:rgba(52,211,153,.1);
---amber:#fbbf24;--purple:#a78bfa;
---bdr:rgba(255,255,255,.06);--bdr2:rgba(255,255,255,.1);
---r:8px;--r2:12px;--r3:16px;
---blur:blur(20px);--blur2:blur(40px);
---shadow:0 8px 32px rgba(0,0,0,.4);
-}
-body{font-family:'Plus Jakarta Sans',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--t1);height:100vh;overflow:hidden;-webkit-font-smoothing:antialiased}
-::selection{background:var(--accent);color:#fff}
-::-webkit-scrollbar{width:6px;height:6px}
-::-webkit-scrollbar-track{background:transparent}
-::-webkit-scrollbar-thumb{background:var(--t4);border-radius:3px}
-::-webkit-scrollbar-thumb:hover{background:var(--t3)}
-
-/* SVG ICON SYSTEM */
-.icon{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0;display:inline-block;vertical-align:middle}
-.icon-sm{width:14px;height:14px}
-.icon-lg{width:20px;height:20px}
-
-/* AUTH */
-#authOverlay{position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;align-items:center;justify-content:center}
-#authOverlay::before{content:'';position:absolute;top:-20%;left:-10%;width:600px;height:600px;background:radial-gradient(circle,rgba(79,140,255,.08),transparent 60%);pointer-events:none}
-#authOverlay::after{content:'';position:absolute;bottom:-20%;right:-10%;width:500px;height:500px;background:radial-gradient(circle,rgba(160,100,255,.06),transparent 60%);pointer-events:none}
-.auth-wrap{position:relative;width:380px;max-width:90vw}
-.auth-brand{text-align:center;margin-bottom:28px}
-.auth-brand h1{font-size:28px;font-weight:800;letter-spacing:-1.2px;display:flex;align-items:center;justify-content:center;gap:8px}
-.auth-brand h1 .mark{width:32px;height:32px;background:linear-gradient(135deg,var(--accent),#7c5cfc);border-radius:8px;display:flex;align-items:center;justify-content:center}
-.auth-brand h1 .mark svg{width:18px;height:18px;stroke:#fff;fill:none;stroke-width:2}
-.auth-brand p{color:var(--t3);font-size:13px;margin-top:6px}
-.auth-card{background:var(--glass);backdrop-filter:var(--blur);border:1px solid var(--glass-border);border-radius:var(--r3);padding:28px;box-shadow:var(--shadow)}
-.auth-tabs{display:flex;margin-bottom:20px;border-bottom:1px solid var(--bdr);gap:0}
-.auth-tabs button{flex:1;padding:10px;border:none;background:none;font:600 13px 'Plus Jakarta Sans',sans-serif;color:var(--t3);cursor:pointer;border-bottom:2px solid transparent;transition:.2s}
-.auth-tabs button.on{color:var(--accent);border-bottom-color:var(--accent)}
-.a-err{color:var(--red);font-size:11px;min-height:14px;margin-bottom:6px}
-.a-field{margin-bottom:12px}
-.a-field label{display:block;font-size:11px;font-weight:600;color:var(--t3);margin-bottom:4px;letter-spacing:.3px}
-.a-field input{width:100%;padding:10px 12px;background:rgba(255,255,255,.04);border:1px solid var(--bdr2);border-radius:var(--r);color:var(--t1);font:400 13px 'Plus Jakarta Sans',sans-serif;outline:none;transition:.2s}
-.a-field input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accentg)}
-.a-field input::placeholder{color:var(--t4)}
-.a-btn{width:100%;padding:11px;border:none;border-radius:var(--r);font:600 13px 'Plus Jakarta Sans',sans-serif;cursor:pointer;transition:.15s}
-.a-btn.primary{background:linear-gradient(135deg,var(--accent),#6366f1);color:#fff}
-.a-btn.primary:hover{filter:brightness(1.1)}
-.a-btn.outline{background:rgba(255,255,255,.04);color:var(--t1);border:1px solid var(--bdr2);display:flex;align-items:center;justify-content:center;gap:8px;margin-top:8px}
-.a-btn.outline:hover{background:rgba(255,255,255,.08);border-color:var(--bdr2)}
-.a-divider{display:flex;align-items:center;gap:10px;margin:16px 0;color:var(--t4);font-size:11px}
-.a-divider::before,.a-divider::after{content:'';flex:1;height:1px;background:var(--bdr)}
-.hidden{display:none!important}
-
-/* LAYOUT */
-.app{display:flex;flex-direction:column;height:100vh}
-
-/* TOP BAR */
-.topbar{height:44px;background:var(--glass);backdrop-filter:var(--blur);border-bottom:1px solid var(--glass-border);display:flex;align-items:center;padding:0 10px;gap:4px;flex-shrink:0;z-index:50}
-.topbar .logo{font-weight:800;font-size:14px;letter-spacing:-.5px;cursor:pointer;display:flex;align-items:center;gap:6px;padding:0 8px 0 4px;color:var(--t2)}
-.topbar .logo .mark{width:22px;height:22px;background:linear-gradient(135deg,var(--accent),#7c5cfc);border-radius:5px;display:flex;align-items:center;justify-content:center}
-.topbar .logo .mark svg{width:12px;height:12px;stroke:#fff;fill:none;stroke-width:2.5}
-.topbar .sep{width:1px;height:20px;background:var(--bdr);margin:0 2px}
-.topbar .fname{font-size:12px;color:var(--t3);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 6px}
-.topbar .spacer{flex:1}
-.tb{padding:5px 8px;border:none;background:none;color:var(--t3);font:500 11px 'Plus Jakarta Sans',sans-serif;cursor:pointer;border-radius:5px;transition:.12s;display:flex;align-items:center;gap:4px;white-space:nowrap}
-.tb:hover{background:rgba(255,255,255,.06);color:var(--t1)}
-.tb.on{background:var(--accentg);color:var(--accent)}
-.tb.cta{background:var(--accent);color:#fff;font-weight:600;padding:5px 12px}
-.tb.cta:hover{background:var(--accent2)}
-.topbar .avatar{width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--accent);cursor:pointer;overflow:hidden;margin-left:4px;border:1px solid var(--bdr2)}
-.topbar .avatar img{width:100%;height:100%;object-fit:cover}
-
-/* TOOLBAR */
-.toolbar{height:36px;background:var(--bg2);border-bottom:1px solid var(--glass-border);display:flex;align-items:center;padding:0 6px;gap:1px;flex-shrink:0;overflow-x:auto}
-.tg{display:flex;align-items:center;gap:1px;padding:0 3px}
-.tg+.tg{border-left:1px solid var(--bdr);margin-left:3px;padding-left:6px}
-.tbt{padding:4px 7px;border:none;background:none;color:var(--t3);font:500 10.5px 'Plus Jakarta Sans',sans-serif;cursor:pointer;border-radius:4px;transition:.1s;display:flex;align-items:center;gap:3px;white-space:nowrap}
-.tbt:hover{background:rgba(255,255,255,.06);color:var(--t1)}
-.tbt.on{background:var(--accentg);color:var(--accent)}
-.tbt .icon{width:13px;height:13px}
-
-/* WORKSPACE */
-.ws{display:flex;flex:1;overflow:hidden}
-
-/* LEFT PANEL */
-.lpanel{width:160px;background:var(--bg2);border-right:1px solid var(--glass-border);display:flex;flex-direction:column;flex-shrink:0}
-.lpanel .lp-head{padding:8px 10px;font-size:10px;font-weight:700;color:var(--t4);text-transform:uppercase;letter-spacing:.6px;border-bottom:1px solid var(--glass-border);display:flex;align-items:center;justify-content:space-between}
-.lpanel .lp-body{flex:1;overflow-y:auto;padding:6px}
-.pthumb{margin-bottom:6px;cursor:pointer;border:2px solid transparent;border-radius:5px;overflow:hidden;transition:.12s;position:relative}
-.pthumb:hover{border-color:var(--t4)}
-.pthumb.on{border-color:var(--accent);box-shadow:0 0 0 2px var(--accentg)}
-.pthumb canvas{width:100%;display:block}
-.pthumb .pn{text-align:center;font-size:9px;color:var(--t4);padding:2px 0;font-weight:500;background:var(--bg3)}
-.pthumb .ctx{position:absolute;top:2px;right:2px;width:16px;height:16px;border-radius:3px;background:rgba(0,0,0,.6);color:#fff;border:none;cursor:pointer;font-size:8px;display:none;align-items:center;justify-content:center}
-.pthumb:hover .ctx{display:flex}
-
-/* CENTER */
-.cpanel{flex:1;background:var(--bg3);overflow:auto;display:flex;flex-direction:column;align-items:center;padding:20px;position:relative}
-.cpanel .page-wrap{position:relative;margin-bottom:12px;box-shadow:0 2px 16px rgba(0,0,0,.3);border-radius:2px;overflow:visible}
-.cpanel .page-wrap canvas{display:block}
-
-/* OVERLAYS */
-.ov{position:absolute;cursor:move;border:1.5px solid transparent;border-radius:2px;transition:border-color .1s}
-.ov:hover{border-color:var(--accent)}
-.ov.sel{border-color:var(--accent);box-shadow:0 0 0 2px var(--accentg)}
-.ov .rh{position:absolute;width:7px;height:7px;background:var(--accent);border:1px solid var(--bg);border-radius:1px}
-.ov .rh.br{bottom:-3px;right:-3px;cursor:nwse-resize}
-.ov .rh.tl{top:-3px;left:-3px;cursor:nwse-resize}
-.ov .ov-del{position:absolute;top:-10px;right:-10px;width:18px;height:18px;border-radius:50%;background:var(--red);color:#fff;border:none;cursor:pointer;font-size:9px;display:none;align-items:center;justify-content:center;font-weight:700}
-.ov:hover .ov-del{display:flex}
-
-/* RIGHT PANEL */
-.rpanel{width:240px;background:var(--bg2);border-left:1px solid var(--glass-border);display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto}
-.rp-sec{padding:12px;border-bottom:1px solid var(--glass-border)}
-.rp-h{font-size:10px;font-weight:700;color:var(--t4);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
-.rp-row{display:flex;align-items:center;gap:6px;margin-bottom:6px}
-.rp-row label{font-size:11px;color:var(--t3);min-width:50px}
-.rp-row input,.rp-row select{padding:5px 7px;border:1px solid var(--bdr2);border-radius:5px;background:rgba(255,255,255,.04);color:var(--t1);font:11px 'Plus Jakarta Sans',sans-serif;outline:none;flex:1;max-width:120px}
-.rp-row input:focus,.rp-row select:focus{border-color:var(--accent)}
-.rp-row input[type=color]{width:22px;height:22px;padding:0;border:1px solid var(--bdr2);border-radius:3px;cursor:pointer;flex:unset;background:none}
-.rp-row input[type=range]{flex:1;accent-color:var(--accent);max-width:100px}
-.rp-btn{width:100%;padding:7px;border:1px solid var(--bdr2);border-radius:6px;background:rgba(255,255,255,.03);color:var(--t2);font:500 11px 'Plus Jakarta Sans',sans-serif;cursor:pointer;transition:.12s;margin-bottom:4px;text-align:center;display:flex;align-items:center;justify-content:center;gap:5px}
-.rp-btn:hover{background:rgba(255,255,255,.06);color:var(--t1)}
-.rp-btn.accent{background:var(--accentg);color:var(--accent);border-color:rgba(79,140,255,.2)}
-.rp-btn.danger{color:var(--red);border-color:var(--redg)}
-.rp-btn.danger:hover{background:var(--redg)}
-
-/* HOME */
-.home{flex:1;overflow-y:auto;padding:48px 32px;display:flex;flex-direction:column;align-items:center}
-.home-hero{text-align:center;max-width:520px;margin-bottom:40px}
-.home-hero h1{font-size:36px;font-weight:800;letter-spacing:-1.5px;line-height:1.1;margin-bottom:10px}
-.home-hero h1 span{background:linear-gradient(135deg,var(--accent),#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-.home-hero p{color:var(--t3);font-size:14px;line-height:1.6}
-.home-drop{width:100%;max-width:560px;border:1.5px dashed var(--bdr2);border-radius:var(--r3);padding:48px 32px;text-align:center;cursor:pointer;transition:.25s;background:var(--glass);backdrop-filter:var(--blur);position:relative;margin-bottom:36px}
-.home-drop:hover{border-color:var(--accent);background:var(--accentg2)}
-.home-drop input{position:absolute;inset:0;opacity:0;cursor:pointer}
-.home-drop .hd-icon{margin-bottom:12px}
-.home-drop .hd-icon svg{width:40px;height:40px;stroke:var(--t3);fill:none;stroke-width:1.5}
-.home-drop h3{font-size:16px;font-weight:600;margin-bottom:4px}
-.home-drop p{color:var(--t4);font-size:12px}
-.home-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;width:100%;max-width:600px}
-.hg-card{padding:16px 10px;background:var(--glass);backdrop-filter:var(--blur);border:1px solid var(--glass-border);border-radius:var(--r2);cursor:pointer;transition:.2s;text-align:center}
-.hg-card:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.2)}
-.hg-card svg{width:24px;height:24px;stroke:var(--accent);fill:none;stroke-width:1.5;margin-bottom:6px}
-.hg-card .hg-name{font-size:11px;font-weight:600;color:var(--t2)}
-
-/* MODAL */
-.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.5);backdrop-filter:blur(4px);z-index:200;display:flex;align-items:center;justify-content:center}
-.modal{background:var(--bg3);border:1px solid var(--glass-border);border-radius:var(--r3);box-shadow:var(--shadow);width:460px;max-width:92vw;max-height:85vh;overflow-y:auto}
-.modal-head{padding:14px 18px;border-bottom:1px solid var(--glass-border);display:flex;align-items:center;justify-content:space-between}
-.modal-head h3{font-size:15px;font-weight:700}
-.modal-x{width:26px;height:26px;border-radius:6px;border:1px solid var(--bdr2);background:none;color:var(--t3);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px}
-.modal-x:hover{background:rgba(255,255,255,.06);color:var(--t1)}
-.modal-body{padding:18px}
-.modal-foot{padding:12px 18px;border-top:1px solid var(--glass-border);display:flex;justify-content:flex-end;gap:6px}
-.sig-tabs{display:flex;gap:4px;margin-bottom:12px}
-.sig-tab{padding:7px 14px;border:1px solid var(--bdr2);border-radius:6px;background:none;font:500 11px 'Plus Jakarta Sans',sans-serif;color:var(--t3);cursor:pointer;display:flex;align-items:center;gap:4px}
-.sig-tab.on{background:var(--accentg);color:var(--accent);border-color:rgba(79,140,255,.2)}
-.sig-cvs{background:#fff;border-radius:6px;cursor:crosshair;display:block;width:100%;touch-action:none}
-.sig-type{width:100%;padding:16px;font:italic 28px 'Brush Script MT',cursive;border:1px solid var(--bdr2);border-radius:8px;background:rgba(255,255,255,.04);color:var(--t1);text-align:center;outline:none}
-
-/* STATUSBAR */
-.sbar{height:24px;background:var(--bg2);border-top:1px solid var(--glass-border);display:flex;align-items:center;padding:0 10px;gap:10px;font-size:10px;color:var(--t4);flex-shrink:0}
-.sbar .zc{display:flex;align-items:center;gap:3px;margin-left:auto}
-.sbar .zc button{width:18px;height:18px;border:1px solid var(--bdr2);border-radius:3px;background:none;color:var(--t3);cursor:pointer;font-size:10px;display:flex;align-items:center;justify-content:center}
-.sbar .zc button:hover{background:rgba(255,255,255,.06)}
-
-/* TOAST */
-.toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%) translateY(50px);padding:8px 18px;background:var(--glass);backdrop-filter:var(--blur);border:1px solid var(--glass-border);border-radius:8px;color:var(--t1);font-size:12px;font-weight:500;z-index:500;opacity:0;transition:.3s;box-shadow:var(--shadow)}
-.toast.show{transform:translateX(-50%) translateY(0);opacity:1}
-
-@media(max-width:768px){.lpanel,.rpanel{display:none}}
-</style>
 </head>
 <body>
 
-<!-- AUTH -->
-<div id="authOverlay">
-<div class="auth-wrap">
-<div class="auth-brand">
-  <h1><span class="mark"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8Z"/><path d="M14 2v6h6"/></svg></span> PDFForge</h1>
-  <p>Professional PDF editor in your browser</p>
-</div>
-<div class="auth-card">
-  <div class="auth-tabs"><button class="on" onclick="setAM('login')">Sign In</button><button onclick="setAM('register')">Create Account</button></div>
-  <div class="a-err" id="aErr"></div>
-  <div class="a-field"><label>Email</label><input id="aEmail" type="email" placeholder="you@example.com"></div>
-  <div class="a-field"><label>Password</label><input id="aPass" type="password" placeholder="Min 6 characters"></div>
-  <div class="a-field hidden" id="aNameF"><label>Full Name</label><input id="aName" placeholder="Your name"></div>
-  <button class="a-btn primary" id="aSubmit" onclick="doAuth()">Sign In</button>
-  <div class="a-divider">or</div>
-  <button class="a-btn outline" onclick="doGoogle()">
-    <svg width="16" height="16" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
-    Continue with Google
-  </button>
-</div>
-</div>
-</div>
+<header>
+  <a class="logo" onclick="PF.goHome()">
+    <div class="logo-mark">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round">
+        <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8Z"/><path d="M14 2v6h6"/>
+      </svg>
+    </div>
+    <b>PDF</b>Forge
+  </a>
+  <nav class="header-nav">
+    <button data-f="all" class="on" onclick="PF.filter('all')">All Tools</button>
+    <button data-f="organize" onclick="PF.filter('organize')">Organize</button>
+    <button data-f="convert" onclick="PF.filter('convert')">Convert</button>
+    <button data-f="edit" onclick="PF.filter('edit')">Edit</button>
+    <button data-f="security" onclick="PF.filter('security')">Security</button>
+  </nav>
+  <div class="header-right">
+    <button class="auth-btn" id="authBtn" onclick="PF.toggleAuth()" style="display:none">Sign In</button>
+  </div>
+</header>
 
-<!-- APP -->
-<div class="app hidden" id="app">
+<!-- HOME -->
+<div id="homeView">
+  <section class="hero">
+    <h1>Every PDF tool you need,<br><em>100% free.</em></h1>
+    <p class="sub">Merge, split, compress, convert, edit, sign, and transform your PDFs. Everything runs privately in your browser. No uploads, no servers.</p>
+    <div class="search-box">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <input type="text" id="search" placeholder="Search tools... (merge, compress, convert)" oninput="PF.search(this.value)">
+    </div>
+  </section>
 
-<!-- TOPBAR -->
-<div class="topbar">
-  <div class="logo" onclick="goHome()"><div class="mark"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8Z"/><path d="M14 2v6h6"/></svg></div>PDFForge</div>
-  <div class="sep"></div>
-  <span class="fname" id="fName">No file open</span>
-  <div class="spacer"></div>
-  <button class="tb" onclick="undo()"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M3 10h10a5 5 0 015 5v2"/><path d="m3 10 4-4"/><path d="m3 10 4 4"/></svg> Undo</button>
-  <button class="tb" onclick="redo()"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M21 10H11a5 5 0 00-5 5v2"/><path d="m21 10-4-4"/><path d="m21 10-4 4"/></svg> Redo</button>
-  <div class="sep"></div>
-  <button class="tb" onclick="savePDF()"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></svg> Save</button>
-  <button class="tb cta" onclick="exportPDF()"><svg class="icon icon-sm" viewBox="0 0 24 24" stroke="#fff"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Export</button>
-  <div class="sep"></div>
-  <div class="avatar" id="uAv" onclick="signOut()"></div>
-</div>
-
-<!-- TOOLBAR -->
-<div class="toolbar" id="tbar">
-  <div class="tg">
-    <button class="tbt on" data-m="select" onclick="setMode('select')"><svg class="icon" viewBox="0 0 24 24"><path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/></svg> Select</button>
-    <button class="tbt" data-m="hand" onclick="setMode('hand')"><svg class="icon" viewBox="0 0 24 24"><path d="M18 11V6a2 2 0 00-4 0v4m0 0V4a2 2 0 00-4 0v7m0 0V5a2 2 0 00-4 0v8.5c0 .83.67 1.5 1.5 1.5M14 10V8a2 2 0 014 0v5a6 6 0 01-6 6H9a6 6 0 01-6-6v-1.5"/></svg> Pan</button>
-  </div>
-  <div class="tg">
-    <button class="tbt" data-m="text" onclick="setMode('text')"><svg class="icon" viewBox="0 0 24 24"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg> Text</button>
-    <button class="tbt" data-m="image" onclick="setMode('image')"><svg class="icon" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg> Image</button>
-    <button class="tbt" data-m="whiteout" onclick="setMode('whiteout')"><svg class="icon" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" fill="currentColor" opacity=".2"/><path d="M3 3h18v18H3z"/></svg> Erase</button>
-  </div>
-  <div class="tg">
-    <button class="tbt" data-m="highlight" onclick="setMode('highlight')"><svg class="icon" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4Z"/></svg> Highlight</button>
-    <button class="tbt" data-m="underline" onclick="setMode('underline')"><svg class="icon" viewBox="0 0 24 24"><path d="M6 3v7a6 6 0 0012 0V3"/><line x1="4" y1="21" x2="20" y2="21"/></svg> Underline</button>
-    <button class="tbt" data-m="strikethrough" onclick="setMode('strikethrough')"><svg class="icon" viewBox="0 0 24 24"><path d="M16 4H9a3 3 0 00-3 3v0a3 3 0 003 3h6a3 3 0 010 6H8"/><line x1="4" y1="12" x2="20" y2="12"/></svg> Strike</button>
-    <button class="tbt" data-m="draw" onclick="setMode('draw')"><svg class="icon" viewBox="0 0 24 24"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="M2 2l7.586 7.586"/></svg> Draw</button>
-    <button class="tbt" data-m="note" onclick="setMode('note')"><svg class="icon" viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg> Note</button>
-  </div>
-  <div class="tg">
-    <button class="tbt" data-m="arrow" onclick="setMode('arrow')"><svg class="icon" viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg> Arrow</button>
-    <button class="tbt" data-m="rect" onclick="setMode('rect')"><svg class="icon" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/></svg> Rect</button>
-    <button class="tbt" data-m="circle" onclick="setMode('circle')"><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/></svg> Circle</button>
-  </div>
-  <div class="tg">
-    <button class="tbt" onclick="openSignModal()"><svg class="icon" viewBox="0 0 24 24"><path d="M20 19.5c-1.5 0-3-.5-4.5-2-2.5 2.5-5 2-7.5.5C5.5 19.5 3 20 2 20"/><path d="M2 16.5c1-.5 3.5-1 6 1 2.5-2 5-2.5 7.5-.5 1.5 1.5 3 2 4.5 2"/><path d="M15.5 9.5L10 15l-3.5-.5.5-3.5L12.5 5.5a2.12 2.12 0 013 3z"/></svg> Sign</button>
-    <button class="tbt" data-m="stamp" onclick="setMode('stamp')"><svg class="icon" viewBox="0 0 24 24"><path d="M5 21h14"/><path d="M12 17V12"/><path d="M8 12h8a1 1 0 001-1V8.6a1 1 0 00-.5-.9l-3-1.7a1 1 0 00-1 0l-3 1.7a1 1 0 00-.5.9V11a1 1 0 001 1z"/></svg> Stamp</button>
-  </div>
-  <div class="tg">
-    <button class="tbt" data-m="crop" onclick="setMode('crop')"><svg class="icon" viewBox="0 0 24 24"><path d="M6 2v14a2 2 0 002 2h14"/><path d="M18 22V8a2 2 0 00-2-2H2"/></svg> Crop</button>
-    <button class="tbt" onclick="flattenPDF()"><svg class="icon" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg> Flatten</button>
-  </div>
+  <div class="filters" id="filterBar"></div>
+  <div class="grid" id="toolGrid"></div>
 </div>
 
 <!-- WORKSPACE -->
-<div class="ws" id="wsWrap">
-  <!-- HOME -->
-  <div class="home" id="homeScr">
-    <div class="home-hero">
-      <h1>Your PDF <span>workspace.</span></h1>
-      <p>Upload a document to start editing, signing, annotating, and organizing. Everything runs privately in your browser.</p>
-    </div>
-    <div class="home-drop">
-      <input type="file" accept=".pdf" onchange="loadPDF(this.files[0])">
-      <div class="hd-icon"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>
-      <h3>Drop your PDF here</h3>
-      <p>or click to browse files</p>
-    </div>
-    <div class="home-grid">
-      <div class="hg-card" onclick="triggerUpload()"><svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg><div class="hg-name">Edit PDF</div></div>
-      <div class="hg-card" onclick="triggerUpload()"><svg viewBox="0 0 24 24"><path d="M20 19.5c-1.5 0-3-.5-4.5-2-2.5 2.5-5 2-7.5.5"/><path d="M15.5 9.5L10 15l-3.5-.5.5-3.5 5.5-5.5a2.12 2.12 0 013 3z"/></svg><div class="hg-name">Sign PDF</div></div>
-      <div class="hg-card" onclick="triggerUpload()"><svg viewBox="0 0 24 24"><path d="M16 3h5v5"/><path d="M8 3H3v5"/><path d="M21 3l-7 7"/><path d="M3 3l7 7"/><path d="M3 21l7-7"/><path d="M21 21l-7-7"/></svg><div class="hg-name">Merge</div></div>
-      <div class="hg-card" onclick="triggerUpload()"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg><div class="hg-name">Compress</div></div>
+<div class="workspace" id="workspace">
+  <div class="ws-head">
+    <button class="ws-back" onclick="PF.goHome()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>
+    </button>
+    <div>
+      <h2 id="wsTitle"></h2>
+      <p id="wsDesc"></p>
     </div>
   </div>
-
-  <!-- EDITOR PANELS (hidden) -->
-  <div class="lpanel hidden" id="lp">
-    <div class="lp-head"><span>Pages</span><span id="pgCt">0</span></div>
-    <div class="lp-body" id="pgThumbs"></div>
-  </div>
-  <div class="cpanel hidden" id="cp"></div>
-  <div class="rpanel hidden" id="rp">
-    <div class="rp-sec">
-      <div class="rp-h">Tool Settings</div>
-      <div class="rp-row"><label>Color</label><input type="color" id="tColor" value="#4f8cff"></div>
-      <div class="rp-row"><label>Size</label><input type="range" id="tSize" min="1" max="20" value="3" oninput="document.getElementById('tSizeV').textContent=this.value"><span style="font-size:10px;color:var(--t4);min-width:16px" id="tSizeV">3</span></div>
-      <div class="rp-row"><label>Opacity</label><input type="range" id="tOpacity" min="0.1" max="1" step="0.1" value="1" oninput="document.getElementById('tOpV').textContent=Math.round(this.value*100)+'%'"><span style="font-size:10px;color:var(--t4);min-width:26px" id="tOpV">100%</span></div>
-      <div class="rp-row"><label>Font</label><select id="tFont"><option>Helvetica</option><option>Times</option><option>Courier</option></select></div>
-      <div class="rp-row"><label>Size</label><input type="number" id="tFontSz" value="16" min="6" max="120" style="max-width:50px"></div>
-    </div>
-    <div class="rp-sec">
-      <div class="rp-h">Page Actions</div>
-      <button class="rp-btn" onclick="rotPage(90)"><svg class="icon icon-sm" viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg> Rotate 90</button>
-      <button class="rp-btn" onclick="dupPage()"><svg class="icon icon-sm" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 00-2-2H6a2 2 0 00-2 2v8a2 2 0 002 2h2"/></svg> Duplicate</button>
-      <button class="rp-btn" onclick="insertBlank()"><svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg> Insert Blank</button>
-      <button class="rp-btn danger" onclick="delPage()"><svg class="icon icon-sm" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg> Delete Page</button>
-    </div>
-    <div class="rp-sec">
-      <div class="rp-h">Document</div>
-      <button class="rp-btn" onclick="addWatermark()"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M12 22a7 7 0 007-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 13.1 5 15 5 17a7 7 0 007 5z"/></svg> Watermark</button>
-      <button class="rp-btn" onclick="addPageNums()"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg> Page Numbers</button>
-      <button class="rp-btn accent" onclick="flattenPDF()"><svg class="icon icon-sm" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg> Flatten All</button>
-    </div>
-  </div>
-</div>
-
-<!-- STATUSBAR -->
-<div class="sbar">
-  <span id="sMode">Select</span>
-  <span id="sPage">Page 1 of 1</span>
-  <div class="zc">
-    <button onclick="zoomOut()">-</button>
-    <span id="zLvl">100%</span>
-    <button onclick="zoomIn()">+</button>
-  </div>
-</div>
-</div>
-
-<!-- SIGN MODAL -->
-<div class="modal-bg hidden" id="sigModal">
-<div class="modal">
-  <div class="modal-head"><h3>Add Signature</h3><button class="modal-x" onclick="closeSig()">x</button></div>
-  <div class="modal-body">
-    <div class="sig-tabs">
-      <button class="sig-tab on" onclick="setSigM('draw')"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/></svg> Draw</button>
-      <button class="sig-tab" onclick="setSigM('type')"><svg class="icon icon-sm" viewBox="0 0 24 24"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg> Type</button>
-      <button class="sig-tab" onclick="setSigM('upload')"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> Upload</button>
-    </div>
-    <div id="sDraw"><canvas id="sCvs" class="sig-cvs" width="420" height="140"></canvas><div style="display:flex;gap:4px;margin-top:6px"><button class="rp-btn" style="width:auto;margin:0" onclick="clearSig()">Clear</button><div style="flex:1"></div><input type="color" id="sCol" value="#000033" style="width:22px;height:22px;border:1px solid var(--bdr2);border-radius:3px;cursor:pointer"></div></div>
-    <div id="sType" class="hidden"><input class="sig-type" id="sTypeIn" placeholder="Type your name" oninput="updateTypeSig()"><canvas id="sTypeCvs" class="sig-cvs" width="420" height="80" style="margin-top:8px"></canvas></div>
-    <div id="sUpload" class="hidden"><div style="padding:20px;border:1.5px dashed var(--bdr2);border-radius:8px;text-align:center;cursor:pointer;position:relative"><input type="file" accept="image/*" style="position:absolute;inset:0;opacity:0;cursor:pointer" onchange="loadSigImg(this.files[0])"><p style="color:var(--t3);font-size:12px">Upload signature image</p></div><canvas id="sUpCvs" class="sig-cvs hidden" width="420" height="100" style="margin-top:8px"></canvas></div>
-  </div>
-  <div class="modal-foot">
-    <button class="rp-btn" style="width:auto;margin:0" onclick="closeSig()">Cancel</button>
-    <button class="rp-btn accent" style="width:auto;margin:0" onclick="placeSig()">Place on Document</button>
-  </div>
-</div>
+  <div id="wsBody"></div>
 </div>
 
 <div class="toast" id="toast"></div>
 
-<script>
-if(typeof firebase!=='undefined'){
-  firebase.initializeApp({apiKey:"AIzaSyBfbAkQOyCmH6L0Sn0_vkGr7u0qU6tyUyc",authDomain:"pdf-forge-dcc91.firebaseapp.com",databaseURL:"https://pdf-forge-dcc91-default-rtdb.firebaseio.com",projectId:"pdf-forge-dcc91",storageBucket:"pdf-forge-dcc91.firebasestorage.app",messagingSenderId:"836650786743",appId:"1:836650786743:web:64f5d2d93732f1e0b65232",measurementId:"G-D4B1218M0B"});
-  var auth=firebase.auth(),db=firebase.database();
-  try{firebase.analytics();}catch(e){}
-  auth.onAuthStateChanged(function(u){if(u){document.getElementById('authOverlay').classList.add('hidden');document.getElementById('app').classList.remove('hidden');var av=document.getElementById('uAv');if(u.photoURL)av.innerHTML='<img src="'+u.photoURL+'">';else av.textContent=(u.displayName||u.email||'U').charAt(0).toUpperCase();}else{document.getElementById('authOverlay').classList.remove('hidden');document.getElementById('app').classList.add('hidden');}});
-}else{document.getElementById('authOverlay').classList.add('hidden');document.getElementById('app').classList.remove('hidden');}
-pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+<footer>
+  PDFForge &mdash; Free online PDF tools. All processing runs locally in your browser. Your files never leave your device.
+</footer>
 
-var AM='login';
-function setAM(m){AM=m;document.querySelectorAll('.auth-tabs button').forEach(function(b,i){b.classList.toggle('on',i===(m==='login'?0:1));});document.getElementById('aNameF').classList.toggle('hidden',m==='login');document.getElementById('aSubmit').textContent=m==='login'?'Sign In':'Create Account';document.getElementById('aErr').textContent='';}
-function doAuth(){var e=document.getElementById('aEmail').value,p=document.getElementById('aPass').value;if(!e||!p){document.getElementById('aErr').textContent='Fill in all fields';return;}if(AM==='login')auth.signInWithEmailAndPassword(e,p).catch(function(er){document.getElementById('aErr').textContent=er.message;});else{var n=document.getElementById('aName').value;if(!n){document.getElementById('aErr').textContent='Enter name';return;}auth.createUserWithEmailAndPassword(e,p).then(function(c){return c.user.updateProfile({displayName:n});}).catch(function(er){document.getElementById('aErr').textContent=er.message;});}}
-function doGoogle(){auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(function(er){document.getElementById('aErr').textContent=er.message;});}
-function signOut(){if(typeof auth!=='undefined')auth.signOut();}
-
-var pdfDoc=null,pdfBytes=null,curPg=0,zoom=1.0,mode='select',ovs={},undoS=[],redoS=[],sigData=null,sigCtx=null,sigD=false;
-
-function toast(m){var t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(function(){t.classList.remove('show');},3e3);}
-function triggerUpload(){document.querySelector('.home-drop input').click();}
-
-function loadPDF(f){if(!f)return;document.getElementById('fName').textContent=f.name;var r=new FileReader();r.onload=function(e){pdfBytes=new Uint8Array(e.target.result);pdfjsLib.getDocument({data:pdfBytes}).promise.then(function(d){pdfDoc=d;ovs={};undoS=[];redoS=[];showEditor();renderAll();});};r.readAsArrayBuffer(f);}
-
-function showEditor(){document.getElementById('homeScr').classList.add('hidden');['lp','cp','rp'].forEach(function(id){document.getElementById(id).classList.remove('hidden');});}
-function goHome(){document.getElementById('homeScr').classList.remove('hidden');['lp','cp','rp'].forEach(function(id){document.getElementById(id).classList.add('hidden');});pdfDoc=null;pdfBytes=null;document.getElementById('fName').textContent='No file open';}
-
-function renderAll(){
-  var cp=document.getElementById('cp'),th=document.getElementById('pgThumbs');cp.innerHTML='';th.innerHTML='';
-  document.getElementById('pgCt').textContent=pdfDoc.numPages;
-  for(var i=1;i<=pdfDoc.numPages;i++)(function(n){
-    pdfDoc.getPage(n).then(function(pg){
-      var vp=pg.getViewport({scale:zoom*1.5});
-      var w=document.createElement('div');w.className='page-wrap';w.id='pg-'+n;w.style.width=vp.width+'px';w.style.height=vp.height+'px';w.dataset.n=n;
-      var c=document.createElement('canvas');c.width=vp.width;c.height=vp.height;w.appendChild(c);cp.appendChild(w);
-      pg.render({canvasContext:c.getContext('2d'),viewport:vp});
-      setupPage(w,n);renderOvs(n);
-      // Thumb
-      var tvp=pg.getViewport({scale:.22});var td=document.createElement('div');td.className='pthumb'+(n-1===curPg?' on':'');td.onclick=function(){scrollTo(n);};
-      var tc=document.createElement('canvas');tc.width=tvp.width;tc.height=tvp.height;td.appendChild(tc);
-      var pn=document.createElement('div');pn.className='pn';pn.textContent=n;td.appendChild(pn);th.appendChild(td);
-      pg.render({canvasContext:tc.getContext('2d'),viewport:tvp});
-    });
-  })(i);
-  updStatus();
-}
-
-function scrollTo(n){curPg=n-1;var el=document.getElementById('pg-'+n);if(el)el.scrollIntoView({behavior:'smooth',block:'start'});document.querySelectorAll('.pthumb').forEach(function(t,i){t.classList.toggle('on',i===n-1);});updStatus();}
-function updStatus(){document.getElementById('sPage').textContent='Page '+(curPg+1)+' of '+(pdfDoc?pdfDoc.numPages:0);document.getElementById('zLvl').textContent=Math.round(zoom*100)+'%';}
-function zoomIn(){zoom=Math.min(3,zoom+.25);if(pdfDoc)renderAll();updStatus();}
-function zoomOut(){zoom=Math.max(.25,zoom-.25);if(pdfDoc)renderAll();updStatus();}
-
-function setMode(m){mode=m;document.querySelectorAll('.tbt').forEach(function(b){b.classList.toggle('on',b.dataset.m===m);});document.getElementById('sMode').textContent=m.charAt(0).toUpperCase()+m.slice(1);var cp=document.getElementById('cp');cp.style.cursor=m==='hand'?'grab':m==='text'?'text':(m==='draw'||m==='highlight'||m==='crop'||m==='underline'||m==='strikethrough'||m==='circle'||m==='rect'||m==='arrow'||m==='whiteout')?'crosshair':'default';}
-
-function setupPage(w,n){
-  var drawing=false,sx,sy,tmp;
-  w.addEventListener('mousedown',function(e){
-    if(mode==='select'||mode==='hand')return;
-    var r=w.getBoundingClientRect();sx=e.clientX-r.left;sy=e.clientY-r.top;drawing=true;
-    if(mode==='text'){var t=prompt('Enter text:');if(t)addOv(n,{type:'text',x:sx,y:sy,text:t,color:document.getElementById('tColor').value,fs:+document.getElementById('tFontSz').value||16});drawing=false;return;}
-    if(mode==='note'){var t=prompt('Note:');if(t)addOv(n,{type:'note',x:sx,y:sy,text:t});drawing=false;return;}
-    if(mode==='stamp'){var s=prompt('Stamp (APPROVED, DRAFT, CONFIDENTIAL, FINAL, VOID):','APPROVED');if(s)addOv(n,{type:'stamp',x:sx,y:sy,text:s.toUpperCase()});drawing=false;return;}
-    if(mode==='sign-place'&&sigData){addOv(n,{type:'sig',x:sx,y:sy,w:180,h:60,img:sigData});mode='select';setMode('select');toast('Signature placed. Drag to reposition.');drawing=false;return;}
-    if(mode==='image'){var inp=document.createElement('input');inp.type='file';inp.accept='image/*';inp.onchange=function(){var fr=new FileReader();fr.onload=function(ev){addOv(n,{type:'img',x:sx,y:sy,w:200,h:150,img:ev.target.result});};fr.readAsDataURL(inp.files[0]);};inp.click();drawing=false;return;}
-  });
-  w.addEventListener('mousemove',function(e){
-    if(!drawing)return;var r=w.getBoundingClientRect();var mx=e.clientX-r.left,my=e.clientY-r.top;
-    if(mode==='draw'){if(!tmp)tmp={type:'path',pts:[{x:sx,y:sy}],color:document.getElementById('tColor').value,sz:+document.getElementById('tSize').value||3};tmp.pts.push({x:mx,y:my});drawTemp(w,tmp);}
-    else{tmp={type:mode,x:Math.min(sx,mx),y:Math.min(sy,my),w:Math.abs(mx-sx),h:Math.abs(my-sy),x1:sx,y1:sy,x2:mx,y2:my,color:document.getElementById('tColor').value,sz:+document.getElementById('tSize').value||3};drawTemp(w,tmp);}
-  });
-  w.addEventListener('mouseup',function(){if(!drawing)return;drawing=false;if(tmp){if(mode!=='crop')addOv(n,tmp);else toast('Crop area selected');tmp=null;var ts=w.querySelector('.tsvg');if(ts)ts.remove();}});
-}
-
-function addOv(n,o){if(!ovs[n])ovs[n]=[];o.id='o'+Date.now()+Math.random().toString(36).substr(2,3);ovs[n].push(o);undoS.push({a:'add',n:n,o:o});redoS=[];renderOvs(n);}
-
-function renderOvs(n){
-  var w=document.getElementById('pg-'+n);if(!w)return;
-  w.querySelectorAll('.ov').forEach(function(o){o.remove();});
-  (ovs[n]||[]).forEach(function(o){
-    var el=document.createElement('div');el.className='ov';el.style.left=o.x+'px';el.style.top=o.y+'px';
-    if(o.type==='text')el.innerHTML='<span style="font-size:'+o.fs+'px;color:'+o.color+';white-space:nowrap">'+o.text+'</span>';
-    else if(o.type==='note')el.innerHTML='<div style="width:22px;height:22px;background:#fbbf24;border-radius:4px;display:flex;align-items:center;justify-content:center;cursor:pointer" title="'+o.text+'"><svg width="12" height="12" viewBox="0 0 24 24" stroke="#92400e" fill="none" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg></div>';
-    else if(o.type==='stamp'){var sc={APPROVED:'#34d399',DRAFT:'#fbbf24',CONFIDENTIAL:'#f04848',FINAL:'#4f8cff',COPY:'#9ca3af',VOID:'#f04848','FOR REVIEW':'#a78bfa'};el.innerHTML='<div style="padding:5px 14px;border:2.5px solid '+(sc[o.text]||'#9ca3af')+';color:'+(sc[o.text]||'#9ca3af')+';font-size:20px;font-weight:800;opacity:.7;transform:rotate(-12deg);white-space:nowrap;letter-spacing:2px">'+o.text+'</div>';}
-    else if(o.type==='sig'||o.type==='img'){el.style.width=(o.w||180)+'px';el.style.height=(o.h||60)+'px';el.innerHTML='<img src="'+o.img+'" style="width:100%;height:100%;object-fit:contain;pointer-events:none"><div class="rh br"></div>';setupResize(el,o);}
-    el.innerHTML+='<button class="ov-del" onclick="rmOv('+n+',\''+o.id+'\')">x</button>';
-    makeDrag(el,o,n);w.appendChild(el);
-  });
-}
-
-function drawTemp(w,o){
-  var svg=w.querySelector('.tsvg');if(!svg){svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.setAttribute('class','tsvg');svg.style.cssText='position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:5';w.appendChild(svg);}svg.innerHTML='';
-  if(o.type==='path'&&o.pts.length>1){var d='M'+o.pts.map(function(p){return p.x+','+p.y}).join(' L');svg.innerHTML='<path d="'+d+'" stroke="'+o.color+'" stroke-width="'+o.sz+'" fill="none" stroke-linecap="round"/>';}
-  else if(o.type==='highlight')svg.innerHTML='<rect x="'+o.x+'" y="'+o.y+'" width="'+o.w+'" height="'+o.h+'" fill="'+o.color+'" opacity=".3"/>';
-  else if(o.type==='rect')svg.innerHTML='<rect x="'+o.x+'" y="'+o.y+'" width="'+o.w+'" height="'+o.h+'" stroke="'+o.color+'" stroke-width="'+o.sz+'" fill="none"/>';
-  else if(o.type==='circle')svg.innerHTML='<ellipse cx="'+(o.x+o.w/2)+'" cy="'+(o.y+o.h/2)+'" rx="'+Math.abs(o.w/2)+'" ry="'+Math.abs(o.h/2)+'" stroke="'+o.color+'" stroke-width="'+o.sz+'" fill="none"/>';
-  else if(o.type==='whiteout')svg.innerHTML='<rect x="'+o.x+'" y="'+o.y+'" width="'+o.w+'" height="'+o.h+'" fill="white"/>';
-  else if(o.type==='underline')svg.innerHTML='<line x1="'+o.x1+'" y1="'+o.y2+'" x2="'+o.x2+'" y2="'+o.y2+'" stroke="'+o.color+'" stroke-width="2"/>';
-  else if(o.type==='strikethrough'){var my=(o.y1+o.y2)/2;svg.innerHTML='<line x1="'+o.x1+'" y1="'+my+'" x2="'+o.x2+'" y2="'+my+'" stroke="'+o.color+'" stroke-width="2"/>';}
-  else if(o.type==='arrow')svg.innerHTML='<defs><marker id="ah" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto"><polygon points="0 0,10 3.5,0 7" fill="'+o.color+'"/></marker></defs><line x1="'+o.x1+'" y1="'+o.y1+'" x2="'+o.x2+'" y2="'+o.y2+'" stroke="'+o.color+'" stroke-width="'+o.sz+'" marker-end="url(#ah)"/>';
-  else if(o.type==='crop'){var pw=parseInt(w.style.width),ph=parseInt(w.style.height);svg.innerHTML='<defs><mask id="cm"><rect width="'+pw+'" height="'+ph+'" fill="white"/><rect x="'+o.x+'" y="'+o.y+'" width="'+o.w+'" height="'+o.h+'" fill="black"/></mask></defs><rect width="'+pw+'" height="'+ph+'" fill="rgba(0,0,0,.5)" mask="url(#cm)"/><rect x="'+o.x+'" y="'+o.y+'" width="'+o.w+'" height="'+o.h+'" fill="none" stroke="var(--accent)" stroke-width="2" stroke-dasharray="6"/>';}
-}
-
-function rmOv(n,id){if(!ovs[n])return;ovs[n]=ovs[n].filter(function(o){return o.id!==id});renderOvs(n);}
-
-function makeDrag(el,o){
-  var dx=0,dy=0,d=false;
-  el.addEventListener('mousedown',function(e){if(e.target.classList.contains('rh')||e.target.classList.contains('ov-del'))return;d=true;dx=e.clientX-el.offsetLeft;dy=e.clientY-el.offsetTop;el.classList.add('sel');e.stopPropagation();});
-  document.addEventListener('mousemove',function(e){if(!d)return;o.x=e.clientX-dx;o.y=e.clientY-dy;el.style.left=o.x+'px';el.style.top=o.y+'px';});
-  document.addEventListener('mouseup',function(){if(d){d=false;el.classList.remove('sel');}});
-}
-function setupResize(el,o){
-  var h=el.querySelector('.rh.br');if(!h)return;
-  h.addEventListener('mousedown',function(e){e.stopPropagation();e.preventDefault();var sw=o.w||180,sh=o.h||60,ex=e.clientX,ey=e.clientY;function mv(ev){o.w=Math.max(40,sw+(ev.clientX-ex));o.h=Math.max(20,sh+(ev.clientY-ey));el.style.width=o.w+'px';el.style.height=o.h+'px';}function up(){document.removeEventListener('mousemove',mv);document.removeEventListener('mouseup',up);}document.addEventListener('mousemove',mv);document.addEventListener('mouseup',up);});
-}
-
-function undo(){if(!undoS.length)return;var a=undoS.pop();if(a.a==='add'){ovs[a.n]=ovs[a.n].filter(function(o){return o.id!==a.o.id});redoS.push(a);renderOvs(a.n);toast('Undone');}}
-function redo(){if(!redoS.length)return;var a=redoS.pop();if(a.a==='add'){if(!ovs[a.n])ovs[a.n]=[];ovs[a.n].push(a.o);undoS.push(a);renderOvs(a.n);toast('Redone');}}
-
-// SIGN
-function openSignModal(){document.getElementById('sigModal').classList.remove('hidden');initSigPad();}
-function closeSig(){document.getElementById('sigModal').classList.add('hidden');}
-function setSigM(m){document.querySelectorAll('.sig-tab').forEach(function(t){t.classList.remove('on');});event.currentTarget.classList.add('on');document.getElementById('sDraw').classList.toggle('hidden',m!=='draw');document.getElementById('sType').classList.toggle('hidden',m!=='type');document.getElementById('sUpload').classList.toggle('hidden',m!=='upload');if(m==='draw')initSigPad();}
-
-function initSigPad(){var c=document.getElementById('sCvs');sigCtx=c.getContext('2d');sigCtx.fillStyle='#fff';sigCtx.fillRect(0,0,c.width,c.height);sigD=false;
-c.onmousedown=function(e){sigD=true;sigCtx.strokeStyle=document.getElementById('sCol').value;sigCtx.lineWidth=2;sigCtx.lineCap='round';sigCtx.beginPath();var r=c.getBoundingClientRect();sigCtx.moveTo((e.clientX-r.left)*(c.width/r.width),(e.clientY-r.top)*(c.height/r.height));};
-c.onmousemove=function(e){if(!sigD)return;var r=c.getBoundingClientRect();sigCtx.lineTo((e.clientX-r.left)*(c.width/r.width),(e.clientY-r.top)*(c.height/r.height));sigCtx.stroke();};
-c.onmouseup=function(){sigD=false;};c.onmouseleave=function(){sigD=false;};}
-function clearSig(){var c=document.getElementById('sCvs');sigCtx.fillStyle='#fff';sigCtx.fillRect(0,0,c.width,c.height);}
-function updateTypeSig(){var t=document.getElementById('sTypeIn').value;var c=document.getElementById('sTypeCvs');var x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);x.fillStyle='#000033';x.font='italic 32px Brush Script MT,cursive';x.fillText(t,16,50);}
-function loadSigImg(f){var fr=new FileReader();fr.onload=function(e){var img=new Image();img.onload=function(){var c=document.getElementById('sUpCvs');c.classList.remove('hidden');var x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);var s=Math.min(c.width/img.width,c.height/img.height);x.drawImage(img,(c.width-img.width*s)/2,(c.height-img.height*s)/2,img.width*s,img.height*s);};img.src=e.target.result;};fr.readAsDataURL(f);}
-function placeSig(){var c;if(!document.getElementById('sDraw').classList.contains('hidden'))c=document.getElementById('sCvs');else if(!document.getElementById('sType').classList.contains('hidden'))c=document.getElementById('sTypeCvs');else c=document.getElementById('sUpCvs');sigData=c.toDataURL('image/png');closeSig();mode='sign-place';document.getElementById('sMode').textContent='Click to place signature';document.getElementById('cp').style.cursor='crosshair';toast('Click anywhere on the document to place your signature');}
-
-// PAGE ACTIONS
-function rotPage(){toast('Page rotated');}function dupPage(){toast('Page duplicated');}function insertBlank(){toast('Blank page inserted');}function delPage(){toast('Page deleted');}
-function addWatermark(){var t=prompt('Watermark text:','CONFIDENTIAL');if(!t||!pdfDoc)return;for(var i=1;i<=pdfDoc.numPages;i++)addOv(i,{type:'stamp',x:100,y:200,text:t});toast('Watermark added');}
-function addPageNums(){if(!pdfDoc)return;for(var i=1;i<=pdfDoc.numPages;i++)addOv(i,{type:'text',x:260,y:10,text:'Page '+i+' of '+pdfDoc.numPages,color:'#5c6378',fs:9});toast('Page numbers added');}
-function flattenPDF(){if(!confirm('Flatten makes all annotations permanent. Continue?'))return;toast('Annotations flattened');}
-
-// SAVE/EXPORT
-async function savePDF(){if(!pdfBytes)return toast('No PDF loaded');toast('Saving...');
-try{var doc=await PDFLib.PDFDocument.load(pdfBytes);var font=await doc.embedFont(PDFLib.StandardFonts.Helvetica);var fontB=await doc.embedFont(PDFLib.StandardFonts.HelveticaBold);var sc=zoom*1.5;
-for(var pn in ovs){var pg=doc.getPage(parseInt(pn)-1);var sz=pg.getSize();
-(ovs[pn]||[]).forEach(async function(o){var s=1/sc;
-if(o.type==='text')pg.drawText(o.text,{x:o.x*s,y:sz.height-o.y*s-(o.fs||16)*s,size:(o.fs||16)*s,font:font,color:hex2rgb(o.color)});
-else if(o.type==='stamp')pg.drawText(o.text,{x:o.x*s,y:sz.height-o.y*s-20*s,size:20*s,font:fontB,color:hex2rgb('#f04848'),opacity:.7});
-else if((o.type==='sig'||o.type==='img')&&o.img){try{var ib=Uint8Array.from(atob(o.img.split(',')[1]),function(c){return c.charCodeAt(0)});var im=await doc.embedPng(ib);pg.drawImage(im,{x:o.x*s,y:sz.height-(o.y+(o.h||60))*s,width:(o.w||180)*s,height:(o.h||60)*s});}catch(e){}}
-else if(o.type==='path'&&o.pts){for(var j=1;j<o.pts.length;j++)pg.drawLine({start:{x:o.pts[j-1].x*s,y:sz.height-o.pts[j-1].y*s},end:{x:o.pts[j].x*s,y:sz.height-o.pts[j].y*s},color:hex2rgb(o.color),thickness:(o.sz||2)*s});}
-else if(o.type==='highlight')pg.drawRectangle({x:o.x*s,y:sz.height-(o.y+o.h)*s,width:o.w*s,height:o.h*s,color:PDFLib.rgb(1,1,0),opacity:.3});
-else if(o.type==='whiteout')pg.drawRectangle({x:o.x*s,y:sz.height-(o.y+o.h)*s,width:o.w*s,height:o.h*s,color:PDFLib.rgb(1,1,1)});
-else if(o.type==='rect')pg.drawRectangle({x:o.x*s,y:sz.height-(o.y+o.h)*s,width:o.w*s,height:o.h*s,borderColor:hex2rgb(o.color),borderWidth:(o.sz||2)*s});
-else if(o.type==='circle')pg.drawEllipse({x:(o.x+o.w/2)*s,y:sz.height-(o.y+o.h/2)*s,xScale:Math.abs(o.w/2)*s,yScale:Math.abs(o.h/2)*s,borderColor:hex2rgb(o.color),borderWidth:(o.sz||2)*s});
-});}
-var out=await doc.save();pdfBytes=new Uint8Array(out);toast('Saved!');return new Blob([out],{type:'application/pdf'});}catch(e){toast('Error: '+e.message);}}
-
-async function exportPDF(){var b=await savePDF();if(!b)return;var u=URL.createObjectURL(b);var a=document.createElement('a');a.href=u;a.download=document.getElementById('fName').textContent||'document.pdf';a.click();URL.revokeObjectURL(u);}
-
-function hex2rgb(h){if(!h||h.charAt(0)!=='#')return PDFLib.rgb(0,0,0);return PDFLib.rgb(parseInt(h.slice(1,3),16)/255,parseInt(h.slice(3,5),16)/255,parseInt(h.slice(5,7),16)/255);}
-
-document.addEventListener('keydown',function(e){if(e.key==='z'&&(e.ctrlKey||e.metaKey)){e.preventDefault();e.shiftKey?redo():undo();}if(e.key==='s'&&(e.ctrlKey||e.metaKey)){e.preventDefault();savePDF();}if(e.key==='Escape'){setMode('select');closeSig();}});
-document.addEventListener('dragover',function(e){e.preventDefault();});
-document.addEventListener('drop',function(e){e.preventDefault();var f=e.dataTransfer.files[0];if(f&&f.type==='application/pdf')loadPDF(f);});
-</script>
+<script src="js/app.js"></script>
+<script src="js/tools.js"></script>
+<script src="js/editor.js"></script>
 </body>
 </html>
