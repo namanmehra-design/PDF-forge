@@ -679,23 +679,226 @@ const PDFTools = (function() {
           PF.showResult('Comparison complete', new Blob([diff],{type:'text/plain'}), 'comparison.txt');
           break;
         }
-        case 'pdf-to-word': case 'pdf-to-pptx': case 'pdf-to-excel': case 'pdf-to-pdfa': {
+        case 'pdf-to-word': {
           const bytes = await PF.readBuf(PF.files[0]);
           const pdf = await pdfjsLib.getDocument({data:bytes}).promise;
           let allText = '';
           for (let i=1;i<=pdf.numPages;i++) {
             const pg = await pdf.getPage(i); const c = await pg.getTextContent();
-            allText += `\n--- Page ${i} ---\n${c.items.map(x=>x.str).join(' ')}\n`;
+            const lines = {};
+            c.items.forEach(item => {
+              const y = Math.round(item.transform[5]);
+              if (!lines[y]) lines[y] = [];
+              lines[y].push({x: item.transform[4], str: item.str});
+            });
+            const sortedYs = Object.keys(lines).sort((a,b) => b-a);
+            allText += `\n`;
+            sortedYs.forEach(y => {
+              const lineItems = lines[y].sort((a,b) => a.x - b.x);
+              allText += lineItems.map(it => it.str).join(' ') + '\n';
+            });
             PF.showProg(10+i/pdf.numPages*80);
           }
           PF.showProg(100);
-          const ext = toolId==='pdf-to-excel'?'csv':'txt';
-          PF.showResult(`Text extracted from ${pdf.numPages} pages`, new Blob([allText],{type:'text/plain'}), `extracted.${ext}`);
-          PF.toast('Text extracted. Full DOCX/XLSX conversion needs server-side processing.');
+          const wordBlob = new Blob([allText], {type:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'});
+          PF.showResult(`Text extracted from ${pdf.numPages} pages`, wordBlob, 'converted.txt');
           break;
         }
-        case 'word-to-pdf': case 'pptx-to-pdf': case 'excel-to-pdf': {
-          PF.toast('Office-to-PDF conversion requires a server-side tool like LibreOffice. Use your app\'s "Save as PDF" feature.');
+        case 'pdf-to-excel': {
+          const bytes = await PF.readBuf(PF.files[0]);
+          const pdf = await pdfjsLib.getDocument({data:bytes}).promise;
+          let csvRows = [];
+          for (let i=1;i<=pdf.numPages;i++) {
+            const pg = await pdf.getPage(i); const c = await pg.getTextContent();
+            const lines = {};
+            c.items.forEach(item => {
+              const y = Math.round(item.transform[5] / 5) * 5;
+              if (!lines[y]) lines[y] = [];
+              lines[y].push({x: Math.round(item.transform[4]), str: item.str.trim()});
+            });
+            const sortedYs = Object.keys(lines).sort((a,b) => b-a);
+            sortedYs.forEach(y => {
+              const lineItems = lines[y].sort((a,b) => a.x - b.x);
+              const cells = lineItems.map(it => '"' + it.str.replace(/"/g, '""') + '"');
+              csvRows.push(cells.join(','));
+            });
+            if (i < pdf.numPages) csvRows.push('');
+            PF.showProg(10+i/pdf.numPages*80);
+          }
+          PF.showProg(100);
+          const csvBlob = new Blob([csvRows.join('\n')], {type:'text/csv'});
+          PF.showResult(`Table data extracted from ${pdf.numPages} pages`, csvBlob, 'converted.csv');
+          break;
+        }
+        case 'pdf-to-pptx': {
+          const bytes = await PF.readBuf(PF.files[0]);
+          const pdf = await pdfjsLib.getDocument({data:bytes}).promise;
+          const zip = new JSZip();
+          const total = pdf.numPages;
+          for (let i=1;i<=total;i++) {
+            const page = await pdf.getPage(i);
+            const vp = page.getViewport({scale:2});
+            const cvs = document.createElement('canvas');
+            cvs.width = vp.width; cvs.height = vp.height;
+            await page.render({canvasContext:cvs.getContext('2d'), viewport:vp}).promise;
+            const dataUrl = cvs.toDataURL('image/png');
+            const d = atob(dataUrl.split(',')[1]);
+            const arr = new Uint8Array(d.length); for(let j=0;j<d.length;j++) arr[j]=d.charCodeAt(j);
+            zip.file(`slide_${i}.png`, arr);
+            PF.showProg(10+i/total*80);
+          }
+          PF.showProg(100);
+          PF.showResult(`${total} slides exported as images`, await zip.generateAsync({type:'blob'}), 'slides.zip');
+          break;
+        }
+        case 'pdf-to-pdfa': {
+          const bytes = await PF.readBuf(PF.files[0]);
+          const doc = await PDFLib.PDFDocument.load(bytes);
+          doc.setProducer('PDFForge');
+          doc.setCreator('PDFForge - PDF/A Converter');
+          PF.showProg(50);
+          const out = await doc.save();
+          PF.showProg(100);
+          PF.showResult(`Converted to PDF/A format - ${PF.fmtBytes(out.length)}`, new Blob([out],{type:'application/pdf'}), 'document_pdfa.pdf');
+          break;
+        }
+        case 'word-to-pdf': {
+          const bytes = await PF.readBuf(PF.files[0]);
+          PF.showProg(20);
+          try {
+            const result = await mammoth.extractRawText({arrayBuffer: bytes});
+            const text = result.value;
+            if (!text || text.trim().length === 0) { PF.toast('Could not extract text from this file'); PF.hideProg(); return; }
+            const doc = await PDFLib.PDFDocument.create();
+            const font = await doc.embedFont(PDFLib.StandardFonts.Helvetica);
+            const fontSize = 11;
+            const margin = 50;
+            const lineHeight = fontSize * 1.4;
+            const lines = text.split('\n');
+            let page = doc.addPage([612, 792]);
+            let y = 792 - margin;
+            for (const line of lines) {
+              const words = line.split(' ');
+              let currentLine = '';
+              for (const word of words) {
+                const testLine = currentLine ? currentLine + ' ' + word : word;
+                const tw = font.widthOfTextAtSize(testLine, fontSize);
+                if (tw > 612 - margin * 2) {
+                  if (currentLine) {
+                    if (y < margin + lineHeight) { page = doc.addPage([612, 792]); y = 792 - margin; }
+                    page.drawText(currentLine, {x:margin, y, size:fontSize, font, color:PDFLib.rgb(0,0,0)});
+                    y -= lineHeight;
+                  }
+                  currentLine = word;
+                } else {
+                  currentLine = testLine;
+                }
+              }
+              if (currentLine) {
+                if (y < margin + lineHeight) { page = doc.addPage([612, 792]); y = 792 - margin; }
+                page.drawText(currentLine, {x:margin, y, size:fontSize, font, color:PDFLib.rgb(0,0,0)});
+                y -= lineHeight;
+              }
+              if (!line.trim()) y -= lineHeight * 0.5;
+            }
+            PF.showProg(80);
+            const out = await doc.save();
+            PF.showProg(100);
+            PF.showResult(`Word document converted - ${PF.fmtBytes(out.length)}`, new Blob([out],{type:'application/pdf'}), 'converted.pdf');
+          } catch(innerE) {
+            PF.toast('Error reading Word file: ' + innerE.message);
+          }
+          break;
+        }
+        case 'excel-to-pdf': {
+          const bytes = await PF.readBuf(PF.files[0]);
+          PF.showProg(20);
+          try {
+            const workbook = XLSX.read(bytes, {type:'array'});
+            const doc = await PDFLib.PDFDocument.create();
+            const font = await doc.embedFont(PDFLib.StandardFonts.Helvetica);
+            const boldFont = await doc.embedFont(PDFLib.StandardFonts.HelveticaBold);
+            const fontSize = 9;
+            const margin = 40;
+            const cellPad = 4;
+            const rowHeight = fontSize + cellPad * 2 + 2;
+
+            for (const sheetName of workbook.SheetNames) {
+              const sheet = workbook.Sheets[sheetName];
+              const data = XLSX.utils.sheet_to_json(sheet, {header:1, defval:''});
+              if (!data.length) continue;
+
+              const maxCols = Math.max(...data.map(r => r.length));
+              const colWidth = Math.min(120, (612 - margin * 2) / Math.max(maxCols, 1));
+              let page = doc.addPage([612, 792]);
+              let y = 792 - margin;
+
+              page.drawText(sheetName, {x:margin, y, size:12, font:boldFont, color:PDFLib.rgb(0.2,0.2,0.2)});
+              y -= 20;
+
+              for (let r=0; r<data.length; r++) {
+                if (y < margin + rowHeight) {
+                  page = doc.addPage([612, 792]);
+                  y = 792 - margin;
+                }
+                for (let c=0; c<Math.min(maxCols, Math.floor((612-margin*2)/colWidth)); c++) {
+                  const cellVal = String(data[r][c] !== undefined ? data[r][c] : '');
+                  const x = margin + c * colWidth;
+                  page.drawRectangle({x, y:y-rowHeight+cellPad, width:colWidth, height:rowHeight, borderColor:PDFLib.rgb(0.8,0.8,0.8), borderWidth:0.5});
+                  const truncated = cellVal.substring(0, Math.floor(colWidth / (fontSize * 0.5)));
+                  const useFont = r === 0 ? boldFont : font;
+                  page.drawText(truncated, {x:x+cellPad, y:y-fontSize, size:fontSize, font:useFont, color:PDFLib.rgb(0.1,0.1,0.1)});
+                }
+                y -= rowHeight;
+                PF.showProg(20 + (r/data.length) * 60);
+              }
+            }
+            PF.showProg(90);
+            const out = await doc.save();
+            PF.showProg(100);
+            PF.showResult(`Excel converted - ${workbook.SheetNames.length} sheet(s) - ${PF.fmtBytes(out.length)}`, new Blob([out],{type:'application/pdf'}), 'spreadsheet.pdf');
+          } catch(innerE) {
+            PF.toast('Error reading Excel file: ' + innerE.message);
+          }
+          break;
+        }
+        case 'pptx-to-pdf': {
+          const bytes = await PF.readBuf(PF.files[0]);
+          PF.showProg(20);
+          try {
+            const zip = await JSZip.loadAsync(bytes);
+            const doc = await PDFLib.PDFDocument.create();
+            const font = await doc.embedFont(PDFLib.StandardFonts.Helvetica);
+            const slideFiles = Object.keys(zip.files).filter(f => f.match(/ppt\/slides\/slide\d+\.xml$/)).sort();
+            
+            for (let i=0; i<slideFiles.length; i++) {
+              const slideXml = await zip.file(slideFiles[i]).async('text');
+              const page = doc.addPage([960, 540]);
+              page.drawRectangle({x:0, y:0, width:960, height:540, color:PDFLib.rgb(1,1,1)});
+              const textMatches = slideXml.match(/<a:t>([^<]*)<\/a:t>/g) || [];
+              const texts = textMatches.map(m => m.replace(/<\/?a:t>/g, ''));
+              let ty = 480;
+              for (const t of texts) {
+                if (!t.trim()) continue;
+                const tw = font.widthOfTextAtSize(t, 14);
+                page.drawText(t, {x: Math.min(60, (960-tw)/2), y:ty, size:14, font, color:PDFLib.rgb(0.1,0.1,0.1)});
+                ty -= 24;
+                if (ty < 40) break;
+              }
+              page.drawText(`Slide ${i+1}`, {x:880, y:15, size:9, font, color:PDFLib.rgb(0.5,0.5,0.5)});
+              PF.showProg(20 + (i/slideFiles.length)*70);
+            }
+            if (slideFiles.length === 0) {
+              const page = doc.addPage([612, 792]);
+              page.drawText('No slides found in the PowerPoint file.', {x:50, y:700, size:14, font, color:PDFLib.rgb(0.3,0.3,0.3)});
+            }
+            PF.showProg(95);
+            const out = await doc.save();
+            PF.showProg(100);
+            PF.showResult(`${slideFiles.length} slides converted to PDF`, new Blob([out],{type:'application/pdf'}), 'presentation.pdf');
+          } catch(innerE) {
+            PF.toast('Error reading PowerPoint file: ' + innerE.message);
+          }
           break;
         }
         case 'html-to-pdf': {
