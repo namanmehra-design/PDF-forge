@@ -166,6 +166,43 @@ const PDFTools = (function() {
           <div class="opt-row"><label>Apply to</label><select id="cropPages"><option value="all">All pages</option><option value="custom">Specific pages</option></select></div></div>
         <button class="btn btn-accent" onclick="PDFTools.doCrop()">Crop PDF</button>${r()}`;
 
+      case 'ai-summarize': return `
+        ${d('.pdf',false,'fl')}
+        <p style="color:var(--text2);font-size:13px;margin-top:12px">Uses Gemini AI to analyze and summarize your PDF document. Set your API key in Profile settings.</p>
+        <button class="btn btn-accent" onclick="PFAuth.aiSummarize()">Summarize with AI</button>
+        <div id="aiResult" class="ai-result-box" style="display:none"></div>${r()}`;
+
+      case 'ai-chat': return `
+        ${d('.pdf',false,'fl')}
+        <div id="chatArea" style="display:none">
+          <div class="chat-container">
+            <div class="chat-messages" id="chatMessages">
+              <div class="chat-msg ai">Upload a PDF and I'll be ready to answer your questions about it.</div>
+            </div>
+            <div class="chat-input-area">
+              <input type="text" id="chatInput" placeholder="Ask a question about the PDF..." onkeydown="if(event.key==='Enter')PFAuth.aiChatSend()">
+              <button class="btn btn-accent" style="margin:0;padding:10px 18px" onclick="PFAuth.aiChatSend()">Send</button>
+            </div>
+          </div>
+        </div>${r()}`;
+
+      case 'ai-ocr': return `
+        ${d('.pdf',false,'fl')}
+        <p style="color:var(--text2);font-size:13px;margin-top:12px">Extracts text from scanned PDFs using text extraction and AI-powered OCR for image-based pages.</p>
+        <button class="btn btn-accent" onclick="PFAuth.aiOCR()">Extract Text (OCR)</button>
+        <div id="aiResult" class="ai-result-box" style="display:none"></div>${r()}`;
+
+      case 'ai-translate': return `
+        ${d('.pdf',false,'fl')}
+        <div class="opts"><h4>Translation</h4>
+          <div class="opt-row"><label>Translate to</label><select id="transLang">
+            <option value="Spanish">Spanish</option><option value="French">French</option><option value="German">German</option>
+            <option value="Hindi">Hindi</option><option value="Chinese">Chinese</option><option value="Japanese">Japanese</option>
+            <option value="Korean">Korean</option><option value="Portuguese">Portuguese</option><option value="Arabic">Arabic</option>
+            <option value="Italian">Italian</option><option value="Russian">Russian</option></select></div></div>
+        <button class="btn btn-accent" onclick="PDFTools.aiTranslate()">Translate with AI</button>
+        <div id="aiResult" class="ai-result-box" style="display:none"></div>${r()}`;
+
       default: return `
         ${d(tool.accept||'*',tool.multi,'fl')}
         <button class="btn btn-accent" onclick="PDFTools.generic('${tool.id}')">Process</button>${r()}`;
@@ -181,6 +218,7 @@ const PDFTools = (function() {
         if (tool.id === 'sign') { const a = document.getElementById('signArea'); if(a){ a.style.display=''; initSigCanvas(); } clearInterval(int); }
         if (tool.id === 'edit') { const a = document.getElementById('editArea'); if(a){ a.style.display=''; PDFEditor.init(PF.files[0]); } clearInterval(int); }
         if (tool.id === 'organize') { const a = document.getElementById('orgArea'); if(a){ a.style.display=''; initOrganizer(); } clearInterval(int); }
+        if (tool.id === 'ai-chat') { const a = document.getElementById('chatArea'); if(a){ a.style.display=''; PFAuth.aiChatInit(); } clearInterval(int); }
       }
     }, 300);
   }
@@ -735,6 +773,41 @@ const PDFTools = (function() {
     PF.hideProg();
   }
 
+  // ============ AI TRANSLATE ============
+  async function aiTranslate() {
+    if (!PF.files.length) return PF.toast('Add a PDF');
+    PF.showProg(10);
+    try {
+      const bytes = await PF.readBuf(PF.files[0]);
+      const pdf = await pdfjsLib.getDocument({data:bytes}).promise;
+      let allText = '';
+      for (let i=1; i<=Math.min(pdf.numPages, 15); i++) {
+        const pg = await pdf.getPage(i);
+        const c = await pg.getTextContent();
+        allText += c.items.map(x => x.str).join(' ') + '\n';
+        PF.showProg(10 + (i/Math.min(pdf.numPages,15)) * 30);
+      }
+      if (!allText.trim()) { PF.toast('No text found in PDF'); PF.hideProg(); return; }
+      const lang = document.getElementById('transLang')?.value || 'Spanish';
+      PF.showProg(50);
+      const translated = await PFAuth.callGemini(
+        `Translate the following text to ${lang}. Preserve formatting and paragraph breaks. Only return the translated text, no explanations.\n\nText:\n${allText.substring(0, 20000)}`,
+        4096
+      );
+      PF.showProg(100);
+      if (translated) {
+        const blob = new Blob([translated], {type:'text/plain'});
+        PF.showResult(`Translated to ${lang}`, blob, `translated_${lang.toLowerCase()}.txt`);
+        const resultDiv = document.getElementById('aiResult');
+        if (resultDiv) {
+          resultDiv.style.display = 'block';
+          resultDiv.innerHTML = `<h3 style="margin-bottom:12px;font-size:16px">Translation (${lang})</h3><div class="ai-content" style="max-height:400px;overflow-y:auto;white-space:pre-wrap;font-size:13px">${translated.substring(0, 5000)}</div>`;
+        }
+      }
+    } catch(e) { PF.toast('Error: ' + e.message); }
+    PF.hideProg();
+  }
+
   // ============ GENERIC HANDLER ============
   async function generic(toolId) {
     if (!PF.files.length) return PF.toast('Add a file');
@@ -1040,7 +1113,7 @@ const PDFTools = (function() {
     initSigCanvas, clearSig, doSign,
     imgToPdf, pdfToJpg,
     doStamp, doHeaders, doBates,
-    doRedact, doCrop,
+    doRedact, doCrop, aiTranslate,
     rotSel, delSel, delOrgPg, saveOrg,
     generic
   };
