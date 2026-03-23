@@ -4,11 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PDFForge - Every PDF Tool, Free Forever</title>
-<meta name="description" content="Free online PDF tools with AI. Merge, split, compress, convert, edit, sign, OCR, summarize PDFs. All processing in your browser.">
+<meta name="description" content="Free online PDF tools with AI. Merge, split, compress, convert, edit, sign, OCR, summarize PDFs.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect x='3' y='2' width='20' height='26' rx='3' fill='%233b82f6' opacity='.7'/><rect x='9' y='4' width='20' height='26' rx='3' fill='%233b82f6'/></svg>">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800;1,9..40,400&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css">
-<!-- Firebase -->
+<!-- Firebase Compat (Auth + Firestore) -->
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
@@ -39,7 +39,6 @@
   <div class="header-right" id="headerAuth"></div>
 </header>
 
-<!-- HOME -->
 <div id="homeView">
   <section class="hero">
     <h1>Every PDF tool you need,<br><em>100% free.</em></h1>
@@ -53,30 +52,45 @@
   <div class="grid" id="toolGrid"></div>
 </div>
 
-<!-- WORKSPACE (for tools) -->
 <div class="workspace" id="workspace">
   <div class="ws-head">
     <button class="ws-back" onclick="PF.goHome()">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>
     </button>
-    <div>
-      <h2 id="wsTitle"></h2>
-      <p id="wsDesc"></p>
-    </div>
+    <div><h2 id="wsTitle"></h2><p id="wsDesc"></p></div>
   </div>
   <div id="wsBody"></div>
 </div>
 
-<!-- DASHBOARD (for logged-in users) -->
 <div id="dashView" class="dashboard" style="display:none"></div>
-
 <div class="toast" id="toast"></div>
-
 <footer>PDFForge &mdash; Free online PDF tools with AI. All processing runs locally in your browser. Your files never leave your device.</footer>
 
 <script src="js/app.js"></script>
 <script src="js/tools.js"></script>
 <script src="js/editor.js"></script>
 <script src="js/firebase.js"></script>
+
+<!-- Firebase AI Logic (ESM module) -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js";
+  import { getAI, getGenerativeModel, GoogleAIBackend } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-ai.js";
+
+  const app = initializeApp({
+    apiKey: "AIzaSyBfbAkQOyCmH6L0Sn0_vkGr7u0qU6tyUyc",
+    authDomain: "pdf-forge-dcc91.firebaseapp.com",
+    projectId: "pdf-forge-dcc91",
+    storageBucket: "pdf-forge-dcc91.firebasestorage.app",
+    messagingSenderId: "836650786743",
+    appId: "1:836650786743:web:64f5d2d93732f1e0b65232"
+  }, "ai-app");
+
+  const ai = getAI(app, { backend: new GoogleAIBackend() });
+  const model = getGenerativeModel(ai, { model: "gemini-2.5-flash-lite" });
+
+  // Expose to global scope for firebase.js to use
+  window._firebaseAI = { model, getGenerativeModel, ai };
+  window.dispatchEvent(new Event('firebaseAIReady'));
+</script>
 </body>
 </html>
