@@ -87,7 +87,7 @@ const PDFEditor = (function() {
 
     switch(a.type) {
       case 'text':
-        ctx.font = `${a.fs || 16}px 'Instrument Sans', sans-serif`;
+        ctx.font = `${a.fs || 16}px 'DM Sans', sans-serif`;
         ctx.fillText(a.text, a.x, a.y);
         break;
 
