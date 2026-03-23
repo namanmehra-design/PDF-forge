@@ -200,7 +200,20 @@ const PF = (function() {
   function search(val) { renderGrid('all', val); }
 
   // ===== Navigation =====
+  function nav(f) {
+    // Close dashboard if open
+    const dash = document.getElementById('dashView');
+    if (dash) dash.style.display = 'none';
+    // Show home view
+    document.getElementById('homeView').style.display = '';
+    document.getElementById('workspace').classList.remove('open');
+    // Apply filter
+    filter(f);
+  }
+
   function goHome() {
+    const dash = document.getElementById('dashView');
+    if (dash) dash.style.display = 'none';
     document.getElementById('homeView').style.display = '';
     document.getElementById('workspace').classList.remove('open');
     currentTool = null; files = [];
@@ -315,7 +328,7 @@ const PF = (function() {
 
   // Public API
   return {
-    goHome, filter, search, openTool,
+    goHome, nav, filter, search, openTool,
     handleFiles, rmFile, toggleAuth,
     toast, fmtBytes, readBuf, readURL, parseRanges,
     showProg, hideProg, showResult,
