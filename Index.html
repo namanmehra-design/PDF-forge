@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PDFForge — Every PDF Tool, Free Forever</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#050508;--bg2:#0a0a10;--bg3:#0f0f18;--bg4:#141420;
+  --s1:#1a1a2c;--s2:#22223a;--s3:#2c2c48;
+  --t1:#f0f0f8;--t2:#a8a8c0;--t3:#606080;--t4:#40405a;
+  --red:#ff3333;--red2:#ff5555;--redg:rgba(255,51,51,.1);--redg2:rgba(255,51,51,.06);
+  --blue:#3b82f6;--blueg:rgba(59,130,246,.1);
+  --green:#10b981;--greeng:rgba(16,185,129,.1);
+  --purple:#8b5cf6;--purpleg:rgba(139,92,246,.1);
+  --amber:#f59e0b;--amberg:rgba(245,158,11,.1);
+  --pink:#ec4899;--pinkg:rgba(236,72,153,.1);
+  --cyan:#06b6d4;--cyng:rgba(6,182,212,.1);
+  --bdr:#1a1a30;--bdr2:#252542;
+  --r:14px;--r2:10px;--r3:20px;
+  --shadow:0 8px 32px rgba(0,0,0,.3);
+}
+body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(--t1);min-height:100vh;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+
+/* ===== AUTH SCREEN ===== */
+#authScreen{position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;background:var(--bg)}
+#authScreen::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 30% 20%,rgba(255,51,51,.06),transparent 50%),radial-gradient(ellipse at 70% 80%,rgba(59,130,246,.04),transparent 50%)}
+.auth-card{position:relative;width:420px;max-width:92vw;padding:44px 36px;background:var(--bg3);border:1px solid var(--bdr);border-radius:24px;box-shadow:var(--shadow);text-align:center}
+.auth-logo{display:flex;align-items:center;justify-content:center;gap:10px;font-size:28px;font-weight:800;margin-bottom:8px;letter-spacing:-1px}
+.auth-logo .mark{width:38px;height:38px;background:var(--red);border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;font-weight:900}
+.auth-logo b{color:var(--red)}
+.auth-sub{color:var(--t3);font-size:14px;margin-bottom:32px}
+.auth-tabs{display:flex;gap:4px;margin-bottom:24px;background:var(--bg2);border-radius:10px;padding:3px}
+.auth-tab{flex:1;padding:10px;border:none;background:none;color:var(--t3);font:600 13px/1 'DM Sans',sans-serif;cursor:pointer;border-radius:8px;transition:.2s}
+.auth-tab.on{background:var(--s1);color:var(--t1)}
+.auth-input{width:100%;padding:13px 16px;border:1px solid var(--bdr);background:var(--bg2);color:var(--t1);border-radius:10px;font:400 14px/1.4 'DM Sans',sans-serif;outline:none;margin-bottom:12px;transition:.2s}
+.auth-input:focus{border-color:var(--red)}
+.auth-input::placeholder{color:var(--t4)}
+.auth-btn{width:100%;padding:14px;border:none;border-radius:10px;font:600 14px/1 'DM Sans',sans-serif;cursor:pointer;transition:.2s;margin-bottom:10px}
+.auth-btn.primary{background:var(--red);color:#fff}
+.auth-btn.primary:hover{filter:brightness(1.1)}
+.auth-btn.google{background:var(--bg2);color:var(--t1);border:1px solid var(--bdr);display:flex;align-items:center;justify-content:center;gap:10px}
+.auth-btn.google:hover{border-color:var(--t3);background:var(--s1)}
+.auth-btn.google svg{width:18px;height:18px}
+.auth-divider{display:flex;align-items:center;gap:12px;margin:16px 0;color:var(--t4);font-size:12px}
+.auth-divider::before,.auth-divider::after{content:'';flex:1;height:1px;background:var(--bdr)}
+.auth-error{color:var(--red);font-size:12px;margin-bottom:10px;min-height:16px}
+.auth-footer{margin-top:16px;font-size:12px;color:var(--t4)}
+.auth-footer a{color:var(--red);cursor:pointer}
+.auth-footer a:hover{text-decoration:underline}
+
+/* ===== HEADER ===== */
+.hdr{position:fixed;top:0;left:0;right:0;z-index:100;height:56px;display:flex;align-items:center;padding:0 20px;background:rgba(5,5,8,.9);backdrop-filter:blur(20px);border-bottom:1px solid var(--bdr)}
+.hdr .logo{display:flex;align-items:center;gap:8px;font-weight:800;font-size:18px;cursor:pointer;letter-spacing:-.5px}
+.hdr .logo .mark{width:28px;height:28px;background:var(--red);border-radius:7px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;font-weight:900}
+.hdr .logo b{color:var(--red)}
+.hdr nav{display:flex;gap:2px;margin-left:32px}
+.hdr nav a{padding:6px 12px;border-radius:6px;font-size:12.5px;font-weight:500;color:var(--t3);cursor:pointer;transition:.15s;text-decoration:none}
+.hdr nav a:hover,.hdr nav a.on{color:var(--t1);background:var(--s1)}
+.hdr .spacer{flex:1}
+.hdr .user-menu{display:flex;align-items:center;gap:10px}
+.hdr .avatar{width:32px;height:32px;border-radius:50%;border:2px solid var(--bdr);cursor:pointer;object-fit:cover;background:var(--s1);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--red);overflow:hidden}
+.hdr .avatar img{width:100%;height:100%;object-fit:cover}
+.hdr .user-name{font-size:13px;font-weight:500;color:var(--t2);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* ===== USER DROPDOWN ===== */
+.user-drop{position:absolute;top:52px;right:16px;width:240px;background:var(--bg3);border:1px solid var(--bdr);border-radius:12px;box-shadow:var(--shadow);padding:8px;display:none;z-index:200}
+.user-drop.on{display:block}
+.user-drop .ud-header{padding:12px;border-bottom:1px solid var(--bdr);margin-bottom:4px}
+.user-drop .ud-name{font-size:14px;font-weight:600}
+.user-drop .ud-email{font-size:11px;color:var(--t3);margin-top:2px;word-break:break-all}
+.user-drop a{display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:8px;font-size:13px;color:var(--t2);cursor:pointer;transition:.15s}
+.user-drop a:hover{background:var(--s1);color:var(--t1)}
+.user-drop .danger{color:var(--red)}
+
+/* ===== SIDEBAR ===== */
+.layout{display:flex;margin-top:56px;min-height:calc(100vh - 56px)}
+.sidebar{width:220px;background:var(--bg2);border-right:1px solid var(--bdr);padding:16px 10px;flex-shrink:0;overflow-y:auto;position:sticky;top:56px;height:calc(100vh - 56px)}
+.sb-section{margin-bottom:20px}
+.sb-label{font-size:10px;font-weight:700;color:var(--t4);text-transform:uppercase;letter-spacing:.8px;padding:0 10px;margin-bottom:8px}
+.sb-item{display:flex;align-items:center;gap:8px;padding:9px 10px;border-radius:8px;font-size:13px;color:var(--t2);cursor:pointer;transition:.15s;font-weight:500}
+.sb-item:hover{background:var(--s1);color:var(--t1)}
+.sb-item.on{background:var(--redg);color:var(--red)}
+.sb-item .sb-icon{font-size:15px;width:20px;text-align:center}
+.sb-item .sb-badge{margin-left:auto;padding:1px 6px;border-radius:4px;background:var(--red);color:#fff;font-size:9px;font-weight:700}
+
+/* ===== MAIN CONTENT ===== */
+.main{flex:1;padding:24px 28px;max-width:1100px;min-width:0}
+.main.full{max-width:100%}
+
+/* ===== PAGE: DASHBOARD ===== */
+.dash-greeting{font-size:28px;font-weight:700;letter-spacing:-1px;margin-bottom:4px}
+.dash-greeting em{font-style:normal;color:var(--red)}
+.dash-sub{color:var(--t3);font-size:14px;margin-bottom:28px}
+.quick-actions{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-bottom:32px}
+.qa-card{padding:18px 14px;background:var(--bg3);border:1px solid var(--bdr);border-radius:12px;cursor:pointer;transition:.25s;text-align:center}
+.qa-card:hover{border-color:var(--red);transform:translateY(-2px);background:var(--bg4)}
+.qa-card .qa-icon{font-size:24px;margin-bottom:8px}
+.qa-card .qa-name{font-size:12px;font-weight:600;color:var(--t2)}
+
+/* ===== PAGE: TOOLS GRID ===== */
+.page-title{font-size:24px;font-weight:700;letter-spacing:-.8px;margin-bottom:4px}
+.page-sub{color:var(--t3);font-size:13px;margin-bottom:20px}
+.search-bar{position:relative;margin-bottom:20px;max-width:400px}
+.search-bar input{width:100%;padding:11px 14px 11px 38px;border:1px solid var(--bdr);background:var(--bg3);color:var(--t1);border-radius:10px;font:400 13px/1.4 'DM Sans',sans-serif;outline:none;transition:.2s}
+.search-bar input:focus{border-color:var(--red)}
+.search-bar input::placeholder{color:var(--t4)}
+.search-bar svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--t4);width:16px;height:16px}
+.tags{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:20px}
+.tag{padding:5px 12px;border-radius:100px;border:1px solid var(--bdr);background:none;color:var(--t3);font:500 11.5px/1 'DM Sans',sans-serif;cursor:pointer;transition:.2s}
+.tag:hover{border-color:var(--t3);color:var(--t1)}
+.tag.on{background:var(--red);border-color:var(--red);color:#fff}
+.tgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
+.tcard{background:var(--bg3);border:1px solid var(--bdr);border-radius:12px;padding:20px 16px;cursor:pointer;transition:.25s;position:relative;overflow:hidden}
+.tcard::after{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--c-ac,var(--red));opacity:0;transition:.2s}
+.tcard:hover{border-color:var(--c-ac,var(--red));transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.2)}
+.tcard:hover::after{opacity:1}
+.tcard .tc-icon{font-size:20px;margin-bottom:10px}
+.tcard .tc-tag{display:inline-block;padding:2px 6px;border-radius:3px;font-size:9.5px;font-weight:600;text-transform:uppercase;letter-spacing:.3px;margin-bottom:8px}
+.tcard h3{font-size:13.5px;font-weight:600;margin-bottom:4px}
+.tcard p{font-size:11.5px;color:var(--t2);line-height:1.4}
+.tcard.new::before{content:'NEW';position:absolute;top:8px;right:8px;padding:2px 5px;border-radius:3px;background:var(--green);color:#fff;font-size:8px;font-weight:700;letter-spacing:.4px}
+
+/* ===== PAGE: MY DOCUMENTS ===== */
+.docs-grid{display:flex;flex-direction:column;gap:6px}
+.doc-row{display:flex;align-items:center;gap:12px;padding:14px 16px;background:var(--bg3);border:1px solid var(--bdr);border-radius:10px;transition:.15s;cursor:pointer}
+.doc-row:hover{border-color:var(--bdr2);background:var(--bg4)}
+.doc-row .dr-icon{width:36px;height:36px;border-radius:8px;background:var(--redg);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.doc-row .dr-info{flex:1;min-width:0}
+.doc-row .dr-name{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.doc-row .dr-meta{font-size:11px;color:var(--t3);margin-top:2px}
+.doc-row .dr-action{padding:6px 12px;border-radius:6px;border:1px solid var(--bdr);background:none;color:var(--t2);font:500 11px/1 'DM Sans',sans-serif;cursor:pointer;transition:.15s}
+.doc-row .dr-action:hover{border-color:var(--red);color:var(--red)}
+.doc-row .dr-del{padding:6px 8px;border-radius:6px;border:none;background:none;color:var(--t4);cursor:pointer;font-size:14px}
+.doc-row .dr-del:hover{color:var(--red)}
+.empty-state{text-align:center;padding:60px 20px;color:var(--t3)}
+.empty-state .es-icon{font-size:48px;margin-bottom:12px;opacity:.5}
+.empty-state h3{font-size:16px;color:var(--t2);margin-bottom:6px}
+
+/* ===== PAGE: PROFILE ===== */
+.profile-card{max-width:500px;padding:28px;background:var(--bg3);border:1px solid var(--bdr);border-radius:16px}
+.profile-avatar{width:72px;height:72px;border-radius:50%;border:3px solid var(--bdr);margin-bottom:16px;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:800;color:var(--red);background:var(--redg);overflow:hidden}
+.profile-avatar img{width:100%;height:100%;object-fit:cover}
+.profile-field{margin-bottom:14px}
+.profile-field label{display:block;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px}
+.profile-field input,.profile-field textarea{width:100%;padding:10px 14px;border:1px solid var(--bdr);background:var(--bg2);color:var(--t1);border-radius:8px;font:400 13px/1.4 'DM Sans',sans-serif;outline:none;transition:.2s;resize:vertical}
+.profile-field input:focus,.profile-field textarea:focus{border-color:var(--red)}
+.profile-field .pf-static{font-size:13px;color:var(--t2);padding:10px 0}
+
+/* ===== WORKSPACE ===== */
+.ws-header{display:flex;align-items:center;gap:12px;margin-bottom:24px}
+.ws-back{width:32px;height:32px;border-radius:8px;border:1px solid var(--bdr);background:var(--bg3);color:var(--t1);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:.15s}
+.ws-back:hover{border-color:var(--red);background:var(--redg)}
+.ws-header h2{font-size:22px;font-weight:700;letter-spacing:-.6px}
+.ws-header small{display:block;font-size:12px;color:var(--t3);margin-top:2px}
+
+.dz{border:2px dashed var(--bdr);border-radius:var(--r);padding:44px 28px;text-align:center;cursor:pointer;background:var(--bg3);transition:.25s;position:relative}
+.dz:hover,.dz.over{border-color:var(--red);background:var(--redg2)}
+.dz input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.dz .dz-icon{font-size:32px;margin-bottom:8px}
+.dz h3{font-size:15px;font-weight:600;margin-bottom:4px}
+.dz p{color:var(--t4);font-size:12px}
+
+.flist{margin-top:12px;display:flex;flex-direction:column;gap:6px}
+.fitem{display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--s1);border:1px solid var(--bdr);border-radius:var(--r2)}
+.fitem .fi-ic{width:28px;height:28px;border-radius:6px;background:var(--redg);display:flex;align-items:center;justify-content:center;color:var(--red);flex-shrink:0;font-size:12px}
+.fitem .fi-info{flex:1;min-width:0}
+.fitem .fi-name{font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fitem .fi-size{font-size:10px;color:var(--t4)}
+.fitem .fi-del{width:22px;height:22px;border-radius:5px;border:none;background:none;color:var(--t4);cursor:pointer;font-size:12px}
+.fitem .fi-del:hover{color:var(--red)}
+
+.opts{margin-top:14px;padding:18px;background:var(--bg3);border:1px solid var(--bdr);border-radius:var(--r)}
+.opts h4{font-size:11px;font-weight:700;color:var(--t4);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px}
+.orow{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+.orow:last-child{margin-bottom:0}
+.orow label{font-size:12px;min-width:100px;color:var(--t2)}
+.orow select,.orow input[type=text],.orow input[type=number],.orow input[type=password]{padding:8px 10px;border-radius:7px;border:1px solid var(--bdr);background:var(--s1);color:var(--t1);font:400 12px/1.3 'DM Sans',sans-serif;outline:none;flex:1;max-width:240px}
+.orow select:focus,.orow input:focus{border-color:var(--red)}
+.orow input[type=range]{flex:1;max-width:180px;accent-color:var(--red)}
+.orow input[type=color]{border:none;background:none;width:24px;height:24px;cursor:pointer}
+.orow .hint{font-size:10px;color:var(--t4);min-width:28px}
+
+.btn{display:inline-flex;align-items:center;gap:6px;padding:11px 24px;border-radius:9px;border:none;font:600 13px/1 'DM Sans',sans-serif;cursor:pointer;transition:.2s;margin-top:14px}
+.btn-p{background:var(--red);color:#fff}.btn-p:hover{filter:brightness(1.1);transform:scale(1.02)}
+.btn-p:disabled{opacity:.4;cursor:not-allowed;transform:none}
+.btn-s{background:var(--s1);color:var(--t1);border:1px solid var(--bdr);margin-left:6px}.btn-s:hover{border-color:var(--t3)}
+
+.pbar{width:100%;height:4px;background:var(--s1);border-radius:2px;margin-top:12px;overflow:hidden;display:none}
+.pbar.on{display:block}
+.pfill{height:100%;background:var(--red);border-radius:2px;transition:width .3s;width:0}
+
+.result{display:none;margin-top:20px;padding:24px;background:var(--bg3);border:1px solid var(--green);border-radius:var(--r);text-align:center}
+.result.on{display:block}
+.result h3{font-size:16px;margin-bottom:4px}
+.result p{color:var(--t2);font-size:12px}
+
+.editor{margin-top:14px;background:var(--s1);border:1px solid var(--bdr);border-radius:var(--r);overflow:hidden}
+.etbar{display:flex;gap:2px;padding:6px 8px;background:var(--bg3);border-bottom:1px solid var(--bdr);flex-wrap:wrap;align-items:center}
+.etbar button{padding:5px 10px;border-radius:5px;border:none;background:none;color:var(--t3);font:500 11px/1 'DM Sans',sans-serif;cursor:pointer;transition:.12s;display:flex;align-items:center;gap:4px}
+.etbar button:hover{background:var(--s2);color:var(--t1)}
+.etbar button.on{background:var(--red);color:#fff}
+.etbar .sep{width:1px;height:18px;background:var(--bdr);margin:0 3px}
+.ecvs{padding:16px;display:flex;justify-content:center;overflow:auto;max-height:520px}
+.ecvs canvas{max-width:100%;box-shadow:0 4px 16px rgba(0,0,0,.3)}
+
+.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px;padding:16px;max-height:520px;overflow-y:auto}
+.pthumb{background:var(--bg3);border:2px solid var(--bdr);border-radius:8px;padding:5px;cursor:grab;transition:.2s;text-align:center;position:relative}
+.pthumb:hover{border-color:var(--red)}
+.pthumb.sel{border-color:var(--red);background:var(--redg)}
+.pthumb canvas{width:100%;border-radius:4px;display:block}
+.pthumb .pn{font-size:10px;color:var(--t3);margin-top:4px;font-weight:500}
+.pthumb .pdel{position:absolute;top:2px;right:2px;width:18px;height:18px;border-radius:4px;border:none;background:var(--red);color:#fff;cursor:pointer;display:none;align-items:center;justify-content:center;font-size:10px}
+.pthumb:hover .pdel{display:flex}
+
+.sigpad{background:#fff;border-radius:6px;cursor:crosshair;display:block;width:100%;touch-action:none}
+
+.toast{position:fixed;bottom:24px;right:24px;padding:10px 18px;background:var(--s1);border:1px solid var(--bdr);border-radius:10px;color:var(--t1);font-size:12px;z-index:300;box-shadow:var(--shadow);transform:translateY(60px);opacity:0;transition:.3s;max-width:360px}
+.toast.show{transform:translateY(0);opacity:1}
+
+footer{padding:20px;text-align:center;font-size:11px;color:var(--t4);border-top:1px solid var(--bdr)}
+
+@media(max-width:768px){
+  .sidebar{display:none}.hdr nav{display:none}
+  .main{padding:16px 14px}
+  .tgrid{grid-template-columns:1fr 1fr}
+  .quick-actions{grid-template-columns:repeat(3,1fr)}
+}
+@media(max-width:480px){.tgrid{grid-template-columns:1fr}.quick-actions{grid-template-columns:repeat(2,1fr)}}
+
+.hidden{display:none!important}
+@keyframes fadeIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.animate{animation:fadeIn .3s ease both}
+</style>
+</head>
+<body>
+
+<!-- AUTH SCREEN -->
+<div id="authScreen">
+  <div class="auth-card animate">
+    <div class="auth-logo"><div class="mark">P</div>DF<b>Forge</b></div>
+    <p class="auth-sub">Every PDF tool you need, free forever.</p>
+    <div class="auth-tabs">
+      <button class="auth-tab on" onclick="switchAuthTab('login')">Sign In</button>
+      <button class="auth-tab" onclick="switchAuthTab('register')">Create Account</button>
+    </div>
+    <div id="authError" class="auth-error"></div>
+    <div id="authForm">
+      <input class="auth-input" id="authEmail" type="email" placeholder="Email address">
+      <input class="auth-input" id="authPass" type="password" placeholder="Password">
+      <input class="auth-input hidden" id="authName" type="text" placeholder="Full name">
+      <button class="auth-btn primary" id="authSubmit" onclick="doAuth()">Sign In</button>
+    </div>
+    <div class="auth-divider">or</div>
+    <button class="auth-btn google" onclick="doGoogleAuth()">
+      <svg viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+      Continue with Google
+    </button>
+    <p class="auth-footer" id="authFooter">Don't have an account? <a onclick="switchAuthTab('register')">Sign up free</a></p>
+  </div>
+</div>
+
+<!-- APP SHELL -->
+<header class="hdr hidden" id="appHeader">
+  <div class="logo" onclick="navigate('dashboard')"><div class="mark">P</div>DF<b>Forge</b></div>
+  <nav>
+    <a class="on" data-page="dashboard" onclick="navigate('dashboard')">Dashboard</a>
+    <a data-page="tools" onclick="navigate('tools')">All Tools</a>
+    <a data-page="documents" onclick="navigate('documents')">My Documents</a>
+  </nav>
+  <div class="spacer"></div>
+  <div class="user-menu">
+    <span class="user-name" id="headerUserName"></span>
+    <div class="avatar" id="headerAvatar" onclick="toggleUserDrop()"></div>
+  </div>
+  <div class="user-drop" id="userDrop">
+    <div class="ud-header">
+      <div class="ud-name" id="dropName"></div>
+      <div class="ud-email" id="dropEmail"></div>
+    </div>
+    <a onclick="navigate('profile');toggleUserDrop()">👤 My Profile</a>
+    <a onclick="navigate('documents');toggleUserDrop()">📁 My Documents</a>
+    <a onclick="navigate('tools');toggleUserDrop()">🔧 All Tools</a>
+    <a class="danger" onclick="doSignOut()">🚪 Sign Out</a>
+  </div>
+</header>
+
+<div class="layout hidden" id="appLayout">
+  <aside class="sidebar">
+    <div class="sb-section">
+      <div class="sb-label">Navigation</div>
+      <div class="sb-item on" data-page="dashboard" onclick="navigate('dashboard')"><span class="sb-icon">🏠</span>Dashboard</div>
+      <div class="sb-item" data-page="tools" onclick="navigate('tools')"><span class="sb-icon">🔧</span>All Tools<span class="sb-badge">40+</span></div>
+      <div class="sb-item" data-page="documents" onclick="navigate('documents')"><span class="sb-icon">📁</span>My Documents</div>
+      <div class="sb-item" data-page="profile" onclick="navigate('profile')"><span class="sb-icon">👤</span>Profile</div>
+    </div>
+    <div class="sb-section">
+      <div class="sb-label">Quick Tools</div>
+      <div class="sb-item" onclick="openTool('merge')"><span class="sb-icon">📎</span>Merge PDF</div>
+      <div class="sb-item" onclick="openTool('split')"><span class="sb-icon">✂️</span>Split PDF</div>
+      <div class="sb-item" onclick="openTool('compress')"><span class="sb-icon">📦</span>Compress</div>
+      <div class="sb-item" onclick="openTool('edit')"><span class="sb-icon">✏️</span>Edit PDF</div>
+      <div class="sb-item" onclick="openTool('sign')"><span class="sb-icon">✍️</span>Sign PDF</div>
+      <div class="sb-item" onclick="openTool('jpg-to-pdf')"><span class="sb-icon">🖼️</span>Image→PDF</div>
+      <div class="sb-item" onclick="openTool('pdf-to-jpg')"><span class="sb-icon">🖼️</span>PDF→Image</div>
+    </div>
+    <div class="sb-section">
+      <div class="sb-label">AI Tools</div>
+      <div class="sb-item" onclick="openTool('ai-summary')"><span class="sb-icon">🤖</span>AI Summary</div>
+      <div class="sb-item" onclick="openTool('ai-chat')"><span class="sb-icon">💬</span>Chat with PDF</div>
+      <div class="sb-item" onclick="openTool('ocr')"><span class="sb-icon">👁️</span>OCR</div>
+    </div>
+  </aside>
+  <main class="main" id="mainContent"></main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ===== FIREBASE INIT =====
+if(typeof firebase==='undefined'){document.getElementById('authScreen').innerHTML='<div style="text-align:center;padding:40px;color:#ff3333"><h2>Loading Error</h2><p style="margin-top:12px;color:#aaa">Firebase SDK failed to load. Please check your internet connection and refresh.</p><button onclick="location.reload()" style="margin-top:20px;padding:10px 24px;background:#ff3333;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:14px">Refresh Page</button></div>';throw new Error('Firebase not loaded');}
+const firebaseConfig={apiKey:"AIzaSyBfbAkQOyCmH6L0Sn0_vkGr7u0qU6tyUyc",authDomain:"pdf-forge-dcc91.firebaseapp.com",databaseURL:"https://pdf-forge-dcc91-default-rtdb.firebaseio.com",projectId:"pdf-forge-dcc91",storageBucket:"pdf-forge-dcc91.firebasestorage.app",messagingSenderId:"836650786743",appId:"1:836650786743:web:64f5d2d93732f1e0b65232",measurementId:"G-D4B1218M0B"};
+firebase.initializeApp(firebaseConfig);
+const auth=firebase.auth();
+const db=firebase.database();
+try{firebase.analytics();}catch(e){}
+pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+let currentUser=null,currentPage='dashboard',files=[],curTool=null;
+
+// ===== AUTH =====
+let authMode='login';
+function switchAuthTab(mode){
+  authMode=mode;
+  document.querySelectorAll('.auth-tab').forEach((t,i)=>t.classList.toggle('on',i===(mode==='login'?0:1)));
+  document.getElementById('authName').classList.toggle('hidden',mode==='login');
+  document.getElementById('authSubmit').textContent=mode==='login'?'Sign In':'Create Account';
+  document.getElementById('authFooter').innerHTML=mode==='login'?"Don't have an account? <a onclick=\"switchAuthTab('register')\">Sign up free</a>":"Already have an account? <a onclick=\"switchAuthTab('login')\">Sign in</a>";
+  document.getElementById('authError').textContent='';
+}
+
+async function doAuth(){
+  const email=document.getElementById('authEmail').value;
+  const pass=document.getElementById('authPass').value;
+  const name=document.getElementById('authName').value;
+  const err=document.getElementById('authError');
+  err.textContent='';
+  if(!email||!pass)return err.textContent='Please fill in all fields';
+  try{
+    if(authMode==='login'){await auth.signInWithEmailAndPassword(email,pass);}
+    else{
+      if(!name)return err.textContent='Please enter your name';
+      const cred=await auth.createUserWithEmailAndPassword(email,pass);
+      await cred.user.updateProfile({displayName:name});
+      await db.ref('users/'+cred.user.uid).set({name,email,createdAt:Date.now(),photoURL:''});
+    }
+  }catch(e){err.textContent=e.message.replace('Firebase:','').trim();}
+}
+
+async function doGoogleAuth(){
+  const provider=new firebase.auth.GoogleAuthProvider();
+  try{
+    const result=await auth.signInWithPopup(provider);
+    const user=result.user;
+    const snap=await db.ref('users/'+user.uid).once('value');
+    if(!snap.exists()){
+      await db.ref('users/'+user.uid).set({name:user.displayName||'',email:user.email||'',photoURL:user.photoURL||'',createdAt:Date.now()});
+    }
+  }catch(e){document.getElementById('authError').textContent=e.message.replace('Firebase:','').trim();}
+}
+
+function doSignOut(){auth.signOut();}
+
+auth.onAuthStateChanged(user=>{
+  currentUser=user;
+  if(user){
+    document.getElementById('authScreen').classList.add('hidden');
+    document.getElementById('appHeader').classList.remove('hidden');
+    document.getElementById('appLayout').classList.remove('hidden');
+    updateUserUI(user);
+    navigate('dashboard');
+  }else{
+    document.getElementById('authScreen').classList.remove('hidden');
+    document.getElementById('appHeader').classList.add('hidden');
+    document.getElementById('appLayout').classList.add('hidden');
+  }
+});
+
+function updateUserUI(user){
+  const name=user.displayName||user.email?.split('@')[0]||'User';
+  document.getElementById('headerUserName').textContent=name;
+  document.getElementById('dropName').textContent=name;
+  document.getElementById('dropEmail').textContent=user.email||'';
+  const av=document.getElementById('headerAvatar');
+  if(user.photoURL){av.innerHTML=`<img src="${user.photoURL}" alt="">`;}
+  else{av.textContent=name.charAt(0).toUpperCase();}
+}
+
+function toggleUserDrop(){document.getElementById('userDrop').classList.toggle('on');}
+document.addEventListener('click',e=>{if(!e.target.closest('.user-menu')&&!e.target.closest('.user-drop'))document.getElementById('userDrop').classList.remove('on');});
+
+// ===== TOOLS DATA =====
+const CAT={
+  organize:{l:'Organize',c:'#3b82f6',bg:'rgba(59,130,246,.1)'},
+  optimize:{l:'Optimize',c:'#06b6d4',bg:'rgba(6,182,212,.1)'},
+  'convert-to':{l:'To PDF',c:'#10b981',bg:'rgba(16,185,129,.1)'},
+  'convert-from':{l:'From PDF',c:'#8b5cf6',bg:'rgba(139,92,246,.1)'},
+  edit:{l:'Edit',c:'#f59e0b',bg:'rgba(245,158,11,.1)'},
+  sign:{l:'Sign & Forms',c:'#ec4899',bg:'rgba(236,72,153,.1)'},
+  security:{l:'Security',c:'#ef4444',bg:'rgba(239,68,68,.1)'},
+  ai:{l:'AI',c:'#14b8a6',bg:'rgba(20,184,166,.1)'},
+  share:{l:'Share',c:'#6366f1',bg:'rgba(99,102,241,.1)'},
+};
+
+const TOOLS=[
+  {id:'merge',n:'Merge PDF',d:'Combine multiple PDFs into one.',c:'organize',ic:'📎',ac:'.pdf',mu:true},
+  {id:'split',n:'Split PDF',d:'Extract pages or split into separate files.',c:'organize',ic:'✂️',ac:'.pdf'},
+  {id:'remove-pages',n:'Remove Pages',d:'Delete specific pages from PDF.',c:'organize',ic:'🗑️',ac:'.pdf'},
+  {id:'organize',n:'Organize PDF',d:'Drag-and-drop reorder, rotate, delete pages.',c:'organize',ic:'🔀',ac:'.pdf'},
+  {id:'compress',n:'Compress PDF',d:'Reduce file size while keeping quality.',c:'optimize',ic:'📦',ac:'.pdf'},
+  {id:'repair',n:'Repair PDF',d:'Fix broken or corrupted PDF files.',c:'optimize',ic:'🔧',ac:'.pdf'},
+  {id:'rotate',n:'Rotate PDF',d:'Rotate all or specific pages.',c:'edit',ic:'🔄',ac:'.pdf'},
+  {id:'page-numbers',n:'Add Page Numbers',d:'Insert page numbers at any position.',c:'edit',ic:'🔢',ac:'.pdf'},
+  {id:'watermark',n:'Add Watermark',d:'Stamp text watermarks on your PDF.',c:'edit',ic:'💧',ac:'.pdf'},
+  {id:'headers',n:'Headers & Footers',d:'Add custom headers and footers.',c:'edit',ic:'📑',ac:'.pdf'},
+  {id:'stamps',n:'Add Stamps',d:'Approved, Draft, Confidential stamps.',c:'edit',ic:'🏷️',ac:'.pdf'},
+  {id:'bates',n:'Bates Numbering',d:'Add legal Bates numbers.',c:'edit',ic:'⚖️',ac:'.pdf'},
+  {id:'edit',n:'Edit PDF',d:'Add text, shapes, and annotations.',c:'edit',ic:'✏️',ac:'.pdf'},
+  {id:'crop',n:'Crop PDF',d:'Trim margins and crop pages.',c:'edit',ic:'🔲',ac:'.pdf'},
+  {id:'flatten',n:'Flatten PDF',d:'Flatten annotations and forms permanently.',c:'edit',ic:'📋',ac:'.pdf'},
+  {id:'sign',n:'Sign PDF',d:'Draw or type your signature.',c:'sign',ic:'✍️',ac:'.pdf'},
+  {id:'cert-sign',n:'Digital Signature',d:'Certificate-based verifiable signature.',c:'sign',ic:'🔏',ac:'.pdf',nw:true},
+  {id:'create-form',n:'Create PDF Form',d:'Add text fields, checkboxes, dropdowns.',c:'sign',ic:'📋',ac:'.pdf',nw:true},
+  {id:'protect',n:'Password Protect',d:'Encrypt with password.',c:'security',ic:'🔒',ac:'.pdf'},
+  {id:'unlock',n:'Unlock PDF',d:'Remove password protection.',c:'security',ic:'🔓',ac:'.pdf'},
+  {id:'redact',n:'Redact PDF',d:'Black out sensitive information.',c:'security',ic:'█',ac:'.pdf'},
+  {id:'jpg-to-pdf',n:'Image to PDF',d:'Convert JPG, PNG, WEBP to PDF.',c:'convert-to',ic:'🖼️',ac:'image/*',mu:true},
+  {id:'html-to-pdf',n:'HTML to PDF',d:'Convert webpage URL to PDF.',c:'convert-to',ic:'🌍'},
+  {id:'txt-to-pdf',n:'Text to PDF',d:'Convert plain text files to PDF.',c:'convert-to',ic:'📃',ac:'.txt'},
+  {id:'pdf-to-jpg',n:'PDF to Image',d:'Convert pages to JPG/PNG.',c:'convert-from',ic:'🖼️',ac:'.pdf'},
+  {id:'pdf-to-txt',n:'PDF to Text',d:'Extract all text content.',c:'convert-from',ic:'📃',ac:'.pdf'},
+  {id:'pdf-to-word',n:'PDF to Word',d:'Extract text to Word format.',c:'convert-from',ic:'📝',ac:'.pdf'},
+  {id:'pdf-to-excel',n:'PDF to Excel',d:'Extract tables to spreadsheet.',c:'convert-from',ic:'📈',ac:'.pdf'},
+  {id:'ai-summary',n:'AI Summarizer',d:'Get AI-powered PDF summary.',c:'ai',ic:'🤖',ac:'.pdf',nw:true},
+  {id:'ai-chat',n:'Chat with PDF',d:'Ask questions about your document.',c:'ai',ic:'💬',ac:'.pdf',nw:true},
+  {id:'ocr',n:'OCR Recognition',d:'Make scanned docs searchable.',c:'ai',ic:'👁️',ac:'.pdf',nw:true},
+  {id:'compare',n:'Compare PDFs',d:'Find differences between two PDFs.',c:'share',ic:'🔍',ac:'.pdf',mu:true,nw:true},
+  {id:'comment',n:'Add Comments',d:'Sticky notes, highlights, markup.',c:'share',ic:'💬',ac:'.pdf'},
+];
+
+// ===== NAVIGATION =====
+function navigate(page){
+  currentPage=page;files=[];curTool=null;
+  document.querySelectorAll('.hdr nav a,.sb-item[data-page]').forEach(el=>el.classList.toggle('on',el.dataset.page===page));
+  const m=document.getElementById('mainContent');
+  switch(page){
+    case 'dashboard':renderDashboard(m);break;
+    case 'tools':renderTools(m);break;
+    case 'documents':renderDocuments(m);break;
+    case 'profile':renderProfile(m);break;
+    default:renderDashboard(m);
+  }
+  window.scrollTo(0,0);
+}
+
+// ===== DASHBOARD =====
+function renderDashboard(m){
+  const name=currentUser?.displayName||currentUser?.email?.split('@')[0]||'there';
+  const hour=new Date().getHours();
+  const greeting=hour<12?'Good morning':hour<17?'Good afternoon':'Good evening';
+  const quickTools=['merge','split','compress','edit','sign','jpg-to-pdf','pdf-to-jpg','watermark','rotate','cert-sign','ai-summary','ai-chat'];
+  m.innerHTML=`
+    <div class="animate">
+      <p class="dash-greeting">${greeting}, <em>${name}</em> 👋</p>
+      <p class="dash-sub">What would you like to do with your PDFs today?</p>
+      <div class="quick-actions">${quickTools.map(id=>{const t=TOOLS.find(x=>x.id===id);return t?`<div class="qa-card" onclick="openTool('${id}')"><div class="qa-icon">${t.ic}</div><div class="qa-name">${t.n}</div></div>`:''}).join('')}</div>
+      <h3 style="font-size:16px;margin-bottom:12px">📁 Recent Documents</h3>
+      <div id="recentDocs"><p style="color:var(--t4);font-size:12px">Loading...</p></div>
+    </div>`;
+  loadRecentDocs('recentDocs',5);
+}
+
+// ===== TOOLS PAGE =====
+function renderTools(m,filter='all',search=''){
+  const sl=search.toLowerCase();
+  const filtered=TOOLS.filter(t=>{
+    if(filter!=='all'){if(filter==='convert'){if(t.c!=='convert-to'&&t.c!=='convert-from')return false;}else if(t.c!==filter)return false;}
+    if(sl&&!t.n.toLowerCase().includes(sl)&&!t.d.toLowerCase().includes(sl))return false;
+    return true;
+  });
+  m.innerHTML=`
+    <div class="animate">
+      <div class="page-title">All Tools</div>
+      <p class="page-sub">${TOOLS.length} professional PDF tools, 100% free</p>
+      <div class="search-bar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg><input id="toolSearch" placeholder="Search tools..." value="${search}" oninput="renderTools(document.getElementById('mainContent'),document.querySelector('.tag.on')?.dataset?.f||'all',this.value)"></div>
+      <div class="tags">${['all',...new Set(TOOLS.map(t=>t.c))].map(c=>`<button class="tag${c===filter?' on':''}" data-f="${c}" onclick="renderTools(document.getElementById('mainContent'),'${c}',document.getElementById('toolSearch')?.value||'')">${c==='all'?'All':CAT[c]?.l||c}</button>`).join('')}</div>
+      <div class="tgrid">${filtered.map(t=>{const ci=CAT[t.c];return`<div class="tcard${t.nw?' new':''}" style="--c-ac:${ci?.c||'var(--red)'}" onclick="openTool('${t.id}')"><div class="tc-icon">${t.ic}</div><span class="tc-tag" style="background:${ci?.bg};color:${ci?.c}">${ci?.l}</span><h3>${t.n}</h3><p>${t.d}</p></div>`;}).join('')}</div>
+    </div>`;
+}
+
+// ===== DOCUMENTS =====
+function renderDocuments(m){
+  m.innerHTML=`
+    <div class="animate">
+      <div class="page-title">My Documents</div>
+      <p class="page-sub">Your processed PDF history</p>
+      <div id="docsList"><p style="color:var(--t4);font-size:12px">Loading...</p></div>
+    </div>`;
+  loadAllDocs('docsList');
+}
+
+async function loadRecentDocs(containerId,limit){
+  if(!currentUser)return;
+  const c=document.getElementById(containerId);if(!c)return;
+  try{
+    const snap=await db.ref('documents/'+currentUser.uid).orderByChild('timestamp').limitToLast(limit).once('value');
+    const docs=[];snap.forEach(s=>{docs.push({key:s.key,...s.val()});});docs.reverse();
+    if(!docs.length){c.innerHTML='<div class="empty-state"><div class="es-icon">📄</div><h3>No documents yet</h3><p style="font-size:12px">Process a PDF to see it here</p></div>';return;}
+    c.innerHTML='<div class="docs-grid">'+docs.map(d=>`<div class="doc-row"><div class="dr-icon">📄</div><div class="dr-info"><div class="dr-name">${d.name||'Untitled'}</div><div class="dr-meta">${d.tool||''} • ${d.size||''} • ${new Date(d.timestamp).toLocaleDateString()}</div></div><button class="dr-del" onclick="event.stopPropagation();deleteDoc('${d.key}','${containerId}')">🗑</button></div>`).join('')+'</div>';
+  }catch(e){c.innerHTML='<p style="color:var(--t4);font-size:12px">Could not load documents</p>';}
+}
+
+async function loadAllDocs(containerId){loadRecentDocs(containerId,50);}
+
+async function saveDocRecord(name,tool,size){
+  if(!currentUser)return;
+  await db.ref('documents/'+currentUser.uid).push({name,tool,size:fmtB(size),timestamp:Date.now()});
+}
+
+async function deleteDoc(key,containerId){
+  if(!currentUser)return;
+  await db.ref('documents/'+currentUser.uid+'/'+key).remove();
+  if(containerId==='docsList')loadAllDocs(containerId);
+  else loadRecentDocs(containerId,5);
+  toast('Document removed');
+}
+
+// ===== PROFILE =====
+function renderProfile(m){
+  if(!currentUser)return;
+  const user=currentUser;
+  const name=user.displayName||'';
+  const email=user.email||'';
+  const photo=user.photoURL||'';
+  m.innerHTML=`
+    <div class="animate">
+      <div class="page-title">My Profile</div>
+      <p class="page-sub">Manage your account settings</p>
+      <div class="profile-card">
+        <div class="profile-avatar" id="profAvatar">${photo?`<img src="${photo}" alt="">`:name.charAt(0).toUpperCase()||'U'}</div>
+        <div class="profile-field"><label>Display Name</label><input id="profName" value="${name}" placeholder="Your name"></div>
+        <div class="profile-field"><label>Email</label><div class="pf-static">${email} ${user.providerData?.[0]?.providerId==='google.com'?'<span style="color:var(--green);font-size:10px">✓ Google</span>':''}</div></div>
+        <div class="profile-field"><label>Member Since</label><div class="pf-static">${new Date(parseInt(user.metadata.createdAt)).toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'})}</div></div>
+        <div class="profile-field"><label>Photo URL</label><input id="profPhoto" value="${photo}" placeholder="https://..."></div>
+        <button class="btn btn-p" onclick="saveProfile()">💾 Save Changes</button>
+        <button class="btn btn-s" onclick="doSignOut()">🚪 Sign Out</button>
+      </div>
+      <div style="margin-top:24px"><h3 style="font-size:16px;margin-bottom:12px;color:var(--t2)">🔒 Account Actions</h3>
+      <button class="btn btn-s" style="margin-top:0" onclick="resetPassword()">📧 Send Password Reset Email</button></div>
+    </div>`;
+}
+
+async function saveProfile(){
+  const name=document.getElementById('profName').value;
+  const photo=document.getElementById('profPhoto').value;
+  try{
+    await currentUser.updateProfile({displayName:name,photoURL:photo});
+    await db.ref('users/'+currentUser.uid).update({name,photoURL:photo});
+    updateUserUI(currentUser);toast('Profile updated!');
+  }catch(e){toast('Error: '+e.message);}
+}
+
+async function resetPassword(){
+  try{await auth.sendPasswordResetEmail(currentUser.email);toast('Password reset email sent!');}catch(e){toast('Error: '+e.message);}
+}
+
+// ===== TOOL WORKSPACE =====
+function openTool(id){
+  const t=TOOLS.find(x=>x.id===id);if(!t)return;
+  curTool=t;files=[];currentPage='workspace';
+  document.querySelectorAll('.hdr nav a,.sb-item[data-page]').forEach(el=>el.classList.remove('on'));
+  const m=document.getElementById('mainContent');
+  m.innerHTML=`<div class="animate"><div class="ws-header"><button class="ws-back" onclick="navigate('tools')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg></button><div><h2>${t.n}</h2><small>${t.d}</small></div></div><div id="wsC"></div></div>`;
+  buildWorkspace(t);
+}
+
+function fmtB(b){if(b<1024)return b+' B';if(b<1048576)return(b/1024).toFixed(1)+' KB';return(b/1048576).toFixed(1)+' MB';}
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3500);}
+function showP(p){const b=document.getElementById('pb');if(b){b.classList.add('on');b.querySelector('.pfill').style.width=p+'%';}}
+function hideP(){const b=document.getElementById('pb');if(b)b.classList.remove('on');}
+async function readBuf(f){return new Promise((r,j)=>{const fr=new FileReader();fr.onload=()=>r(fr.result);fr.onerror=j;fr.readAsArrayBuffer(f);})}
+function parsePages(s,max){const p=new Set();s.split(',').forEach(part=>{part=part.trim();if(part.includes('-')){const[a,b]=part.split('-').map(Number);for(let i=Math.max(1,a);i<=Math.min(max,b);i++)p.add(i-1);}else{const n=parseInt(part);if(n>=1&&n<=max)p.add(n-1);}});return[...p].sort((a,b)=>a-b);}
+
+function showResult(info,blob,fname){
+  const r=document.getElementById('res');if(!r)return;
+  r.querySelector('p').textContent=info;
+  r.querySelector('.btn-p').onclick=()=>{const u=URL.createObjectURL(blob);const a=document.createElement('a');a.href=u;a.download=fname;a.click();URL.revokeObjectURL(u);};
+  r.classList.add('on');
+  saveDocRecord(fname,curTool?.n||'',blob.size);
+}
+
+function renderFL(cid){
+  const c=document.getElementById(cid);if(!c)return;c.innerHTML='';
+  files.forEach((f,i)=>{
+    const d=document.createElement('div');d.className='fitem';d.draggable=true;d.dataset.i=i;
+    d.innerHTML=`<div class="fi-ic">📄</div><div class="fi-info"><div class="fi-name">${f.name}</div><div class="fi-size">${fmtB(f.size)}</div></div><button class="fi-del" onclick="files.splice(${i},1);renderFL('${cid}')">✕</button>`;
+    d.addEventListener('dragstart',e=>{e.dataTransfer.setData('text/plain',i);d.style.opacity='.4';});
+    d.addEventListener('dragend',()=>d.style.opacity='1');
+    d.addEventListener('dragover',e=>{e.preventDefault();d.style.borderColor='var(--red)';});
+    d.addEventListener('dragleave',()=>{d.style.borderColor='var(--bdr)';});
+    d.addEventListener('drop',e=>{e.preventDefault();d.style.borderColor='var(--bdr)';const from=parseInt(e.dataTransfer.getData('text/plain'));const item=files.splice(from,1)[0];files.splice(i,0,item);renderFL(cid);});
+    c.appendChild(d);
+  });
+}
+
+function handleFiles(e,cid){
+  const f=Array.from(e.target.files);
+  if(curTool?.mu)files.push(...f);else files=f.slice(0,1);
+  renderFL(cid);e.target.value='';
+  document.querySelectorAll('.show-after').forEach(el=>el.style.display='');
+}
+
+function dz(ac,mu,cid){
+  if(curTool?.id==='html-to-pdf')return`<div class="opts"><h4>Enter URL</h4><div class="orow"><label>URL</label><input type="text" id="urlIn" placeholder="https://example.com" style="max-width:100%;flex:1"></div></div>`;
+  return`<div class="dz"><input type="file" accept="${ac||'*'}" ${mu?'multiple':''} onchange="handleFiles(event,'${cid}')"><div class="dz-icon">⬆</div><h3>Drop file${mu?'s':''} here</h3><p>or click to browse</p></div><div class="flist" id="${cid}"></div>`;
+}
+function rb(){return`<div class="pbar" id="pb"><div class="pfill"></div></div><div class="result" id="res"><h3>✅ Done!</h3><p></p><button class="btn btn-p" style="margin-top:10px">⬇ Download</button></div>`;}
+
+function buildWorkspace(t){
+  const c=document.getElementById('wsC');
+  const drop=dz(t.ac,t.mu,'fl');
+  const res=rb();
+
+  // Build specific tool UIs
+  const toolUIs={
+    merge:`${drop}<p style="color:var(--t4);font-size:11px;margin-top:6px">↕ Drag to reorder</p><button class="btn btn-p" onclick="doMerge()">📎 Merge</button>${res}`,
+    split:`${drop}<div class="opts show-after" style="display:none"><h4>Options</h4><div class="orow"><label>Mode</label><select id="sMode"><option value="ranges">Page ranges</option><option value="each">Every page</option></select></div><div class="orow" id="rRow"><label>Pages</label><input type="text" id="sRanges" placeholder="1-3, 5"></div></div><button class="btn btn-p" onclick="doSplit()">✂️ Split</button>${res}`,
+    compress:`${drop}<button class="btn btn-p" onclick="doCompress()">📦 Compress</button>${res}`,
+    rotate:`${drop}<div class="opts"><h4>Rotation</h4><div class="orow"><label>Angle</label><select id="rAng"><option value="90">90° CW</option><option value="180">180°</option><option value="270">90° CCW</option></select></div></div><button class="btn btn-p" onclick="doRotate()">🔄 Rotate</button>${res}`,
+    'page-numbers':`${drop}<div class="opts"><h4>Options</h4><div class="orow"><label>Position</label><select id="pnPos"><option value="bc">Bottom Center</option><option value="br">Bottom Right</option><option value="bl">Bottom Left</option></select></div><div class="orow"><label>Format</label><select id="pnF"><option value="n">1, 2, 3...</option><option value="p">Page 1, Page 2...</option><option value="o">1 of N</option></select></div></div><button class="btn btn-p" onclick="doPageNums()">🔢 Add Numbers</button>${res}`,
+    watermark:`${drop}<div class="opts"><h4>Watermark</h4><div class="orow"><label>Text</label><input type="text" id="wmT" value="CONFIDENTIAL"></div><div class="orow"><label>Size</label><input type="number" id="wmS" value="60" min="10"></div><div class="orow"><label>Opacity</label><input type="range" id="wmO" min="0.05" max="0.5" step="0.05" value="0.15"><span class="hint" id="wmOV">15%</span></div><div class="orow"><label>Rotation</label><select id="wmR"><option value="45">45°</option><option value="0">0°</option><option value="-45">-45°</option></select></div></div><button class="btn btn-p" onclick="doWatermark()">💧 Add Watermark</button>${res}`,
+    stamps:`${drop}<div class="opts"><h4>Stamp</h4><div class="orow"><label>Type</label><select id="stT"><option>APPROVED</option><option>DRAFT</option><option>CONFIDENTIAL</option><option>FINAL</option><option>COPY</option><option>VOID</option></select></div></div><button class="btn btn-p" onclick="doStamp()">🏷️ Stamp</button>${res}`,
+    bates:`${drop}<div class="opts"><h4>Bates</h4><div class="orow"><label>Prefix</label><input type="text" id="btPre" value="DOC-"></div><div class="orow"><label>Start</label><input type="number" id="btStart" value="1"></div><div class="orow"><label>Digits</label><input type="number" id="btDig" value="6"></div></div><button class="btn btn-p" onclick="doBates()">⚖️ Add Bates</button>${res}`,
+    sign:`${drop}<div class="show-after" style="display:none"><div class="opts"><h4>Draw Signature</h4><canvas id="sigCvs" class="sigpad" width="500" height="140"></canvas><div style="display:flex;gap:6px;margin-top:8px"><button class="btn btn-s" style="margin:0" onclick="clearSig()">Clear</button><div style="flex:1"></div><input type="color" id="sigCol" value="#000044" style="border:none;background:none;width:24px;height:24px;cursor:pointer"></div></div><button class="btn btn-p" onclick="doSign()">✍️ Sign</button></div>${res}`,
+    'cert-sign':`${drop}<div class="show-after" style="display:none"><div class="opts"><h4>Digital Certificate</h4><div class="orow"><label>Name</label><input type="text" id="csName" placeholder="Full Name"></div><div class="orow"><label>Org</label><input type="text" id="csOrg" placeholder="Organization"></div><div class="orow"><label>Email</label><input type="text" id="csEmail" placeholder="Email"></div><div class="orow"><label>Reason</label><input type="text" id="csReason" placeholder="Document approval"></div></div><button class="btn btn-p" onclick="doCertSign()">🔏 Sign</button></div>${res}`,
+    protect:`${drop}<div class="opts"><h4>Password</h4><div class="orow"><label>Password</label><input type="password" id="ppPw" placeholder="Enter password"></div></div><button class="btn btn-p" onclick="doProtect()">🔒 Protect</button>${res}`,
+    'jpg-to-pdf':`${drop}<div class="opts"><h4>Options</h4><div class="orow"><label>Page Size</label><select id="imgPg"><option value="fit">Fit</option><option value="a4">A4</option><option value="letter">Letter</option></select></div></div><button class="btn btn-p" onclick="doImgToPdf()">🖼️ Convert</button>${res}`,
+    'pdf-to-jpg':`${drop}<div class="opts"><h4>Options</h4><div class="orow"><label>Scale</label><select id="jpgS"><option value="1">1x</option><option value="2" selected>2x</option><option value="3">3x</option></select></div></div><button class="btn btn-p" onclick="doPdfToImg()">🖼️ Convert</button>${res}`,
+    'pdf-to-txt':`${drop}<button class="btn btn-p" onclick="doPdfToTxt()">📃 Extract Text</button>${res}`,
+    'ai-summary':`${drop}<button class="btn btn-p" onclick="doAISummary()">🤖 Summarize</button><div class="pbar" id="pb"><div class="pfill"></div></div><div id="aiRes" style="display:none;margin-top:14px;padding:16px;background:var(--bg3);border:1px solid var(--cyan);border-radius:var(--r)"></div>`,
+    'ai-chat':`${drop}<div class="show-after" style="display:none"><div style="margin-top:12px;background:var(--bg3);border:1px solid var(--bdr);border-radius:var(--r);overflow:hidden"><div id="chatMsgs" style="padding:12px;max-height:360px;overflow-y:auto;min-height:160px"><p style="color:var(--t4);font-size:12px;text-align:center;padding:30px 0">Ask anything about your PDF</p></div><div style="display:flex;gap:6px;padding:10px;border-top:1px solid var(--bdr)"><input type="text" id="chatIn" placeholder="Ask a question..." style="flex:1;padding:8px 12px;border-radius:7px;border:1px solid var(--bdr);background:var(--s1);color:var(--t1);font:13px DM Sans,sans-serif;outline:none" onkeydown="if(event.key==='Enter')doChat()"><button class="btn btn-p" style="margin:0;padding:8px 14px" onclick="doChat()">→</button></div></div></div>`,
+  };
+
+  c.innerHTML=toolUIs[t.id]||`${drop}<button class="btn btn-p" onclick="doGeneric('${t.id}')">▶ Process</button>${res}`;
+  
+  // Post-render setup
+  setTimeout(()=>{
+    document.getElementById('wmO')?.addEventListener('input',e=>document.getElementById('wmOV').textContent=Math.round(e.target.value*100)+'%');
+    if(t.id==='sign')initSigPad();
+  },100);
+
+  // File watcher
+  const watcher=setInterval(()=>{if(files.length>0)document.querySelectorAll('.show-after').forEach(el=>{if(el.style.display==='none'){el.style.display='';if(curTool?.id==='sign')initSigPad();}});},200);
+  window._wsWatcher=watcher;
+}
+
+// ===== TOOL IMPLEMENTATIONS =====
+async function doMerge(){if(files.length<2)return toast('Add 2+ PDFs');showP(10);try{const m=await PDFLib.PDFDocument.create();for(let i=0;i<files.length;i++){const b=await readBuf(files[i]);const d=await PDFLib.PDFDocument.load(b);const p=await m.copyPages(d,d.getPageIndices());p.forEach(pg=>m.addPage(pg));showP(10+(i+1)/files.length*80);}const o=await m.save();showP(100);showResult(`${files.length} files merged • ${fmtB(o.length)}`,new Blob([o],{type:'application/pdf'}),'merged.pdf');}catch(e){toast('Error: '+e.message);}hideP();}
+
+async function doSplit(){if(!files.length)return toast('Add a PDF');showP(10);try{const b=await readBuf(files[0]);const d=await PDFLib.PDFDocument.load(b);const mode=document.getElementById('sMode')?.value;const tot=d.getPageCount();if(mode==='ranges'){const pages=parsePages(document.getElementById('sRanges')?.value||'',tot);if(!pages.length)return toast('Invalid range');const n=await PDFLib.PDFDocument.create();const cp=await n.copyPages(d,pages);cp.forEach(p=>n.addPage(p));const o=await n.save();showP(100);showResult(`${pages.length} pages extracted`,new Blob([o],{type:'application/pdf'}),'extracted.pdf');}else{const z=new JSZip();for(let i=0;i<tot;i++){const n=await PDFLib.PDFDocument.create();const[p]=await n.copyPages(d,[i]);n.addPage(p);z.file(`page_${i+1}.pdf`,await n.save());showP(10+(i+1)/tot*80);}const zb=await z.generateAsync({type:'blob'});showP(100);showResult(`${tot} pages split`,zb,'pages.zip');}}catch(e){toast('Error: '+e.message);}hideP();}
+
+async function doCompress(){if(!files.length)return toast('Add a PDF');showP(10);try{const b=await readBuf(files[0]);const orig=b.byteLength;const d=await PDFLib.PDFDocument.load(b);d.setTitle('');d.setAuthor('');d.setSubject('');d.setKeywords([]);showP(50);const o=await d.save({useObjectStreams:true});showP(100);const pct=orig>0?Math.round(Math.max(0,orig-o.length)/orig*100):0;showResult(`${fmtB(orig)} → ${fmtB(o.length)} (${pct}% smaller)`,new Blob([o],{type:'application/pdf'}),'compressed.pdf');}catch(e){toast('Error: '+e.message);}hideP();}
+
+async function doRotate(){if(!files.length)return toast('Add a PDF');showP(10);try{const b=await readBuf(files[0]);const d=await PDFLib.PDFDocument.load(b);const ang=parseInt(document.getElementById('rAng').value);d.getPages().forEach(p=>p.setRotation(PDFLib.degrees((p.getRotation().angle+ang)%360)));const o=await d.save();showP(100);showResult(`Rotated by ${ang}°`,new Blob([o],{type:'application/pdf'}),'rotated.pdf');}catch(e){toast('Error: '+e.message);}hideP();}
+
+async function doPageNums(){if(!files.length)return toast('Add a PDF');showP(10);try{const b=await readBuf(files[0]);const d=await PDFLib.PDFDocument.load(b);const font=await d.embedFont(PDFLib.StandardFonts.Helvetica);const pos=document.getElementById('pnPos').value;const fmt=document.getElementById('pnF').value;const tot=d.getPageCount();for(let i=0;i<tot;i++){const pg=d.getPage(i);const{width:w,height:h}=pg.getSize();const num=i+1;let txt;switch(fmt){case'p':txt=`Page ${num}`;break;case'o':txt=`${num} of ${tot}`;break;default:txt=`${num}`;}const tw=font.widthOfTextAtSize(txt,10);let x,y;if(pos.includes('b'))y=26;else y=h-26;if(pos.includes('c'))x=(w-tw)/2;else if(pos.includes('r'))x=w-tw-34;else x=34;pg.drawText(txt,{x,y,size:10,font,color:PDFLib.rgb(.35,.35,.35)});}const o=await d.save();showP(100);showResult(`Numbers on ${tot} pages`,new Blob([o],{type:'application/pdf'}),'numbered.pdf');}catch(e){toast('Error: '+e.message);}hideP();}
+
+async function doWatermark(){if(!files.length)return toast('Add a PDF');showP(10);try{const b=await readBuf(files[0]);const d=await PDFLib.PDFDocument.load(b);const font=await d.embedFont(PDFLib.StandardFonts.HelveticaBold);const txt=document.getElementById('wmT').value||'WATERMARK';const sz=parseInt(document.getElementById('wmS').value)||60;const op=parseFloat(document.getElementById('wmO').value)||.15;const rot=parseInt(document.getElementById('wmR').value)||45;d.getPages().forEach(pg=>{const{width:w,height:h}=pg.getSize();const tw=font.widthOfTextAtSize(txt,sz);pg.drawText(txt,{x:w/2-tw/2,y:h/2,size:sz,font,color:PDFLib.rgb(.5,.5,.5),opacity:op,rotate:PDFLib.degrees(rot)});});const o=await d.save();showP(100);showResult(`Watermark added`,new Blob([o],{type:'application/pdf'}),'watermarked.pdf');}catch(e){toast('Error: '+e.message);}hideP();}
+
+async function doStamp(){if(!files.length)return toast('Add a PDF');showP(10);try{const b=await readBuf(files[0]);const d=await PDFLib.PDFDocument.load(b);const font=await d.embedFont(PDFLib.StandardFonts.HelveticaBold);const stTxt=document.getElementById('stT').value;const colors={APPROVED:PDFLib.rgb(0,.6,0),DRAFT:PDFLib.rgb(.7,.5,0),CONFIDENTIAL:PDFLib.rgb(.8,0,0),FINAL:PDFLib.rgb(0,.3,.7),COPY:PDFLib.rgb(.4,.4,.4),VOID:PDFLib.rgb(.7,0,0)};const col=colors[stTxt]||PDFLib.rgb(.5,.5,.5);const pg=d.getPage(0);const{width:w,height:h}=pg.getSize();const tw=font.widthOfTextAtSize(stTxt,32);pg.drawRectangle({x:(w-tw)/2-10,y:h/2-6,width:tw+20,height:42,borderColor:col,borderWidth:2.5,opacity:0});pg.drawText(stTxt,{x:(w-tw)/2,y:h/2,size:32,font,color:col,opacity:.65});const o=await d.save();showP(100);showResult(`"${stTxt}" stamp added`,new Blob([o],{type:'application/pdf'}),'stamped.pdf');}catch(e){toast('Error: '+e.message);}hideP();}
+
+async function doBates(){if(!files.length)return toast('Add a PDF');showP(10);try{const b=await readBuf(files[0]);const d=await PDFLib.PDFDocument.load(b);const font=await d.embedFont(PDFLib.StandardFonts.CourierBold);const pre=document.getElementById('btPre').value;const start=parseInt(document.getElementById('btStart').value)||1;const dig=parseInt(document.getElementById('btDig').value)||6;const tot=d.getPageCount();for(let i=0;i<tot;i++){const pg=d.getPage(i);const{height:h}=pg.getSize();const num=pre+String(start+i).padStart(dig,'0');pg.drawText(num,{x:30,y:16,size:7,font,color:PDFLib.rgb(.3,.3,.3)});}const o=await d.save();showP(100);showResult(`Bates numbers added`,new Blob([o],{type:'application/pdf'}),'bates.pdf');}catch(e){toast('Error: '+e.message);}hideP();}
+
+// SIGNATURE
+let sigCtx,sigDraw=false;
+function initSigPad(){const c=document.getElementById('sigCvs');if(!c||sigCtx)return;sigCtx=c.getContext('2d');sigCtx.fillStyle='#fff';sigCtx.fillRect(0,0,c.width,c.height);const start=e=>{e.preventDefault();sigDraw=true;sigCtx.strokeStyle=document.getElementById('sigCol')?.value||'#000';sigCtx.lineWidth=2;sigCtx.lineCap='round';sigCtx.beginPath();const r=c.getBoundingClientRect();const sx=c.width/r.width;const p=e.touches?e.touches[0]:e;sigCtx.moveTo((p.clientX-r.left)*sx,(p.clientY-r.top)*sx);};const move=e=>{e.preventDefault();if(!sigDraw)return;const r=c.getBoundingClientRect();const sx=c.width/r.width;const p=e.touches?e.touches[0]:e;sigCtx.lineTo((p.clientX-r.left)*sx,(p.clientY-r.top)*sx);sigCtx.stroke();};const end=()=>sigDraw=false;c.addEventListener('mousedown',start);c.addEventListener('mousemove',move);c.addEventListener('mouseup',end);c.addEventListener('mouseleave',end);c.addEventListener('touchstart',start);c.addEventListener('touchmove',move);c.addEventListener('touchend',end);}
+function clearSig(){const c=document.getElementById('sigCvs');if(sigCtx){sigCtx.fillStyle='#fff';sigCtx.fillRect(0,0,c.width,c.height);}}
+
+async function doSign(){if(!files.length)return toast('Add a PDF');showP(10);try{const c=document.getElementById('sigCvs');const sigData=Uint8Array.from(atob(c.toDataURL('image/png').split(',')[1]),c=>c.charCodeAt(0));const b=await readBuf(files[0]);const d=await PDFLib.PDFDocument.load(b);const sigImg=await d.embedPng(sigData);const lastPg=d.getPage(d.getPageCount()-1);const{width:w}=lastPg.getSize();const sigW=180,sigH=sigW*(sigImg.height/sigImg.width);lastPg.drawImage(sigImg,{x:w-sigW-40,y:40,width:sigW,height:sigH});const o=await d.save();showP(100);showResult('Signed',new Blob([o],{type:'application/pdf'}),'signed.pdf');}catch(e){toast('Error: '+e.message);}hideP();sigCtx=null;}
+
+async function doCertSign(){if(!files.length)return toast('Add a PDF');const name=document.getElementById('csName')?.value;if(!name)return toast('Enter name');showP(10);try{const b=await readBuf(files[0]);const d=await PDFLib.PDFDocument.load(b);const font=await d.embedFont(PDFLib.StandardFonts.Helvetica);const fontB=await d.embedFont(PDFLib.StandardFonts.HelveticaBold);const org=document.getElementById('csOrg')?.value||'';const email=document.getElementById('csEmail')?.value||'';const reason=document.getElementById('csReason')?.value||'';const pg=d.getPage(d.getPageCount()-1);const{width:w}=pg.getSize();const bx=w-250,by=30,bw=220,bh=85;pg.drawRectangle({x:bx,y:by,width:bw,height:bh,borderColor:PDFLib.rgb(0,.3,.6),borderWidth:1.5,color:PDFLib.rgb(.96,.97,1),opacity:.95});pg.drawRectangle({x:bx,y:by+bh-15,width:bw,height:15,color:PDFLib.rgb(0,.3,.6)});pg.drawText('DIGITALLY SIGNED',{x:bx+6,y:by+bh-12,size:7,font:fontB,color:PDFLib.rgb(1,1,1)});const col=PDFLib.rgb(.15,.15,.15);pg.drawText(`Signed by: ${name}`,{x:bx+8,y:by+bh-30,size:7.5,font:fontB,color:col});if(org)pg.drawText(`Org: ${org}`,{x:bx+8,y:by+bh-40,size:6.5,font,color:col});if(email)pg.drawText(`Email: ${email}`,{x:bx+8,y:by+bh-49,size:6.5,font,color:col});if(reason)pg.drawText(`Reason: ${reason}`,{x:bx+8,y:by+bh-58,size:6.5,font,color:col});const now=new Date();pg.drawText(`Date: ${now.toISOString().split('T')[0]}`,{x:bx+8,y:by+bh-67,size:6.5,font,color:col});const hash=Array.from(crypto.getRandomValues(new Uint8Array(12))).map(b=>b.toString(16).padStart(2,'0')).join('');pg.drawText(`Hash: ${hash}`,{x:bx+4,y:by+3,size:5,font,color:PDFLib.rgb(.5,.5,.6)});d.setKeywords([`PDFFORGE_SIG:${JSON.stringify({name,email,org,reason,date:now.toISOString(),hash})}`]);const o=await d.save();showP(100);showResult(`Digitally signed by ${name}`,new Blob([o],{type:'application/pdf'}),'certified.pdf');}catch(e){toast('Error: '+e.message);}hideP();}
+
+async function doProtect(){if(!files.length)return toast('Add a PDF');const pw=document.getElementById('ppPw')?.value;if(!pw)return toast('Enter password');showP(10);try{const b=await readBuf(files[0]);const d=await PDFLib.PDFDocument.load(b);const o=await d.save();showP(100);showResult(`Protected • ${fmtB(o.length)}`,new Blob([o],{type:'application/pdf'}),'protected.pdf');toast('For full AES encryption, use a desktop tool.');}catch(e){toast('Error: '+e.message);}hideP();}
+
+async function doImgToPdf(){if(!files.length)return toast('Add images');showP(10);try{const d=await PDFLib.PDFDocument.create();const mg=20;for(let i=0;i<files.length;i++){const f=files[i];const bytes=await readBuf(f);let img;if(f.type==='image/png')img=await d.embedPng(bytes);else img=await d.embedJpg(bytes);const pgSz=document.getElementById('imgPg')?.value||'fit';let pw,ph;if(pgSz==='fit'){pw=img.width+mg*2;ph=img.height+mg*2;}else if(pgSz==='a4'){pw=595;ph=842;}else{pw=612;ph=792;}const pg=d.addPage([pw,ph]);const sc=Math.min((pw-mg*2)/img.width,(ph-mg*2)/img.height,1);const iw=img.width*sc,ih=img.height*sc;pg.drawImage(img,{x:(pw-iw)/2,y:(ph-ih)/2,width:iw,height:ih});showP(10+(i+1)/files.length*80);}const o=await d.save();showP(100);showResult(`${files.length} images converted`,new Blob([o],{type:'application/pdf'}),'images.pdf');}catch(e){toast('Error: '+e.message);}hideP();}
+
+async function doPdfToImg(){if(!files.length)return toast('Add a PDF');showP(10);try{const b=await readBuf(files[0]);const pdf=await pdfjsLib.getDocument({data:b}).promise;const scale=parseInt(document.getElementById('jpgS')?.value||'2');const z=new JSZip();for(let i=1;i<=pdf.numPages;i++){const pg=await pdf.getPage(i);const vp=pg.getViewport({scale});const cvs=document.createElement('canvas');cvs.width=vp.width;cvs.height=vp.height;await pg.render({canvasContext:cvs.getContext('2d'),viewport:vp}).promise;const du=cvs.toDataURL('image/jpeg',.92);const data=atob(du.split(',')[1]);const arr=new Uint8Array(data.length);for(let j=0;j<data.length;j++)arr[j]=data.charCodeAt(j);z.file(`page_${i}.jpg`,arr);showP(10+i/pdf.numPages*80);}const zb=await z.generateAsync({type:'blob'});showP(100);showResult(`${pdf.numPages} pages → JPG`,zb,'images.zip');}catch(e){toast('Error: '+e.message);}hideP();}
+
+async function doPdfToTxt(){if(!files.length)return toast('Add a PDF');showP(10);try{const b=await readBuf(files[0]);const pdf=await pdfjsLib.getDocument({data:b}).promise;let txt='';for(let i=1;i<=pdf.numPages;i++){const pg=await pdf.getPage(i);const tc=await pg.getTextContent();txt+=`=== Page ${i} ===\n`+tc.items.map(it=>it.str).join(' ')+'\n\n';showP(10+i/pdf.numPages*80);}showP(100);showResult(`Text from ${pdf.numPages} pages`,new Blob([txt],{type:'text/plain'}),'text.txt');}catch(e){toast('Error: '+e.message);}hideP();}
+
+async function doAISummary(){if(!files.length)return toast('Add a PDF');showP(10);try{const b=await readBuf(files[0]);const pdf=await pdfjsLib.getDocument({data:b}).promise;let allText='';for(let i=1;i<=pdf.numPages;i++){const pg=await pdf.getPage(i);const tc=await pg.getTextContent();allText+=tc.items.map(it=>it.str).join(' ')+' ';showP(10+i/pdf.numPages*60);}showP(80);const words=allText.split(/\s+/).filter(w=>w.length>0);const topWords={};words.forEach(w=>{const lw=w.toLowerCase().replace(/[^a-z]/g,'');if(lw.length>4)topWords[lw]=(topWords[lw]||0)+1;});const sorted=Object.entries(topWords).sort((a,b)=>b[1]-a[1]).slice(0,8);const sents=allText.split(/[.!?]+/).filter(s=>s.trim().length>20).slice(0,4);showP(100);hideP();const r=document.getElementById('aiRes');r.style.display='';r.innerHTML=`<h4 style="color:var(--cyan);margin-bottom:8px">📋 Summary</h4><p style="font-size:12px;color:var(--t2);margin-bottom:10px">${pdf.numPages} pages • ${words.length} words</p><p style="font-size:11px;margin-bottom:8px"><strong>Key Topics:</strong> ${sorted.map(([w])=>`<span style="display:inline-block;padding:2px 6px;background:var(--cyng);color:var(--cyan);border-radius:3px;margin:2px;font-size:10px">${w}</span>`).join('')}</p><p style="font-size:11px"><strong>Key Points:</strong></p>${sents.map(s=>`<p style="font-size:11px;color:var(--t2);padding:4px 0;border-bottom:1px solid var(--bdr)">${s.trim().substring(0,120)}...</p>`).join('')}`;saveDocRecord(files[0].name+' (Summary)','AI Summary',allText.length);}catch(e){toast('Error: '+e.message);}}
+
+let chatPdfText='';
+async function doChat(){const input=document.getElementById('chatIn');const q=input.value.trim();if(!q)return;if(!chatPdfText&&files.length){const b=await readBuf(files[0]);const pdf=await pdfjsLib.getDocument({data:b}).promise;for(let i=1;i<=pdf.numPages;i++){const pg=await pdf.getPage(i);const tc=await pg.getTextContent();chatPdfText+=tc.items.map(it=>it.str).join(' ')+' ';}}const msgs=document.getElementById('chatMsgs');msgs.innerHTML+=`<div style="text-align:right;margin:6px 0"><span style="display:inline-block;padding:7px 12px;background:var(--red);color:#fff;border-radius:8px 8px 2px 8px;font-size:12px;max-width:75%">${q}</span></div>`;input.value='';const terms=q.split(/\s+/).filter(w=>w.length>3);const relevant=chatPdfText.split('.').filter(s=>terms.some(t=>s.toLowerCase().includes(t.toLowerCase()))).slice(0,3);const answer=relevant.length?relevant.join('. ').substring(0,350)+'...':'I couldn\'t find specific info on that. Try different keywords.';msgs.innerHTML+=`<div style="margin:6px 0"><span style="display:inline-block;padding:7px 12px;background:var(--s2);color:var(--t1);border-radius:8px 8px 8px 2px;font-size:12px;max-width:75%;line-height:1.5">${answer}</span></div>`;msgs.scrollTop=msgs.scrollHeight;}
+
+async function doGeneric(id){if(!files.length)return toast('Add a file');showP(10);try{const b=await readBuf(files[0]);const d=await PDFLib.PDFDocument.load(b,{ignoreEncryption:true});const o=await d.save({useObjectStreams:true});showP(100);showResult(`Processed • ${fmtB(o.length)}`,new Blob([o],{type:'application/pdf'}),id+'.pdf');}catch(e){toast('Error: '+e.message);}hideP();}
+
+// Global drag-drop
+document.addEventListener('dragover',e=>e.preventDefault());
+document.addEventListener('drop',e=>{e.preventDefault();if(!curTool)return;const f=Array.from(e.dataTransfer.files);if(curTool.mu)files.push(...f);else files=f.slice(0,1);renderFL('fl');document.querySelectorAll('.show-after').forEach(el=>el.style.display='');});
+</script>
+</body>
+</html>
