@@ -168,7 +168,7 @@ const PDFTools = (function() {
 
       case 'ai-summarize': return `
         ${d('.pdf',false,'fl')}
-        <p style="color:var(--text2);font-size:13px;margin-top:12px">Uses Gemini AI to analyze and summarize your PDF document. Set your API key in Profile settings.</p>
+        <p style="color:var(--text2);font-size:13px;margin-top:12px">Uses Gemini AI through Firebase to analyze and summarize your PDF document. No API key needed.</p>
         <button class="btn btn-accent" onclick="PFAuth.aiSummarize()">Summarize with AI</button>
         <div id="aiResult" class="ai-result-box" style="display:none"></div>${r()}`;
 
