@@ -51,7 +51,7 @@ const PDFEditor = (function() {
       <button class="btn btn-accent" onclick="PDFEditor.save()">Save Edited PDF</button>`;
 
     fileBytes = await PF.readBuf(file);
-    pdfDoc = await pdfjsLib.getDocument({data: fileBytes}).promise;
+    pdfDoc = await pdfjsLib.getDocument({data: new Uint8Array(fileBytes)}).promise;
     totalPages = pdfDoc.numPages;
     curPage = 0;
     annots = {};
