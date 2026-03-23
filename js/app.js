@@ -37,6 +37,10 @@ const PF = (function() {
     bates:     '<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8Z"/><path d="M14 2v6h6"/><path d="M9 17h6"/>',
     header:    '<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8Z"/><path d="M14 2v6h6"/><line x1="4" y1="8" x2="20" y2="8"/>',
     pdfa:      '<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8Z"/><path d="M14 2v6h6"/><path d="M9 15h6"/>',
+    ai:        '<path d="M12 2a4 4 0 014 4v2a4 4 0 01-8 0V6a4 4 0 014-4z"/><path d="M6 12a6 6 0 0012 0"/><path d="M12 18v4"/><path d="M8 22h8"/>',
+    chat:      '<path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>',
+    ocr:       '<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8Z"/><path d="M14 2v6h6"/><circle cx="12" cy="15" r="2"/><path d="M9 15h0"/><path d="M15 15h0"/>',
+    translate: '<path d="M5 8l6 6"/><path d="M4 14l6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="M22 22l-5-10-5 10"/><path d="M14 18h6"/>',
   };
 
   function icon(name) {
@@ -76,6 +80,10 @@ const PF = (function() {
     { id:'pdf-to-pptx',   name:'PDF to PowerPoint',   desc:'Convert pages to presentation slides.',               cat:'convert-from', ic:'pptx',     accept:'.pdf' },
     { id:'pdf-to-excel',  name:'PDF to Excel',        desc:'Extract tables from PDF to CSV.',                     cat:'convert-from', ic:'excel',    accept:'.pdf' },
     { id:'pdf-to-pdfa',   name:'PDF to PDF/A',        desc:'Convert to archival-standard format.',                cat:'convert-from', ic:'pdfa',     accept:'.pdf' },
+    { id:'ai-summarize',  name:'AI Summarize',        desc:'Get an AI-powered summary of your PDF document.',     cat:'ai',           ic:'ai',       accept:'.pdf' },
+    { id:'ai-chat',       name:'Chat with PDF',       desc:'Ask questions about your PDF using AI.',              cat:'ai',           ic:'chat',     accept:'.pdf' },
+    { id:'ai-ocr',        name:'OCR (Text Recognition)', desc:'Extract text from scanned PDFs and images.',       cat:'ai',           ic:'ocr',      accept:'.pdf' },
+    { id:'ai-translate',  name:'AI Translate',        desc:'Translate PDF text to another language using AI.',     cat:'ai',           ic:'translate', accept:'.pdf' },
   ];
 
   const CAT_META = {
@@ -85,6 +93,7 @@ const PF = (function() {
     'convert-from': { label:'From PDF',  color:'#8b5cf6', cls:'cat-convert-from' },
     'edit':         { label:'Edit',      color:'#f59e0b', cls:'cat-edit' },
     'security':     { label:'Security',  color:'#ef4444', cls:'cat-security' },
+    'ai':           { label:'AI',        color:'#f472b6', cls:'cat-ai' },
   };
 
   let files = [];
@@ -173,7 +182,7 @@ const PF = (function() {
     const bar = document.getElementById('filterBar');
     const cats = [
       ['all','All Tools'],['organize','Organize'],['optimize','Optimize'],
-      ['convert-to','To PDF'],['convert-from','From PDF'],['edit','Edit'],['security','Security']
+      ['convert-to','To PDF'],['convert-from','From PDF'],['edit','Edit'],['security','Security'],['ai','AI']
     ];
     bar.innerHTML = cats.map(([k,v]) =>
       `<button class="fbtn${k==='all'?' on':''}" data-f="${k}" onclick="PF.filter('${k}')">${v}</button>`
