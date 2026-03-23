@@ -1013,29 +1013,44 @@ const PDFTools = (function() {
               const data = XLSX.utils.sheet_to_json(sheet, {header:1, defval:''});
               if (!data.length) continue;
 
-              const maxCols = Math.max(...data.map(r => r.length));
-              const colWidth = Math.min(120, (612 - margin * 2) / Math.max(maxCols, 1));
+              const maxCols = data.reduce((max, r) => Math.max(max, r.length), 0);
+              const visibleCols = Math.min(maxCols, 8); // Limit to 8 columns to fit page
+              const colWidth = Math.max(50, (612 - margin * 2) / Math.max(visibleCols, 1));
               let page = doc.addPage([612, 792]);
               let y = 792 - margin;
 
               page.drawText(sheetName, {x:margin, y, size:12, font:boldFont, color:PDFLib.rgb(0.2,0.2,0.2)});
               y -= 20;
 
-              for (let r=0; r<data.length; r++) {
+              const maxRows = Math.min(data.length, 5000); // Limit rows for performance
+              for (let r=0; r<maxRows; r++) {
                 if (y < margin + rowHeight) {
                   page = doc.addPage([612, 792]);
                   y = 792 - margin;
                 }
-                for (let c=0; c<Math.min(maxCols, Math.floor((612-margin*2)/colWidth)); c++) {
-                  const cellVal = String(data[r][c] !== undefined ? data[r][c] : '');
+                for (let c=0; c<visibleCols; c++) {
+                  const rawVal = data[r][c] !== undefined ? data[r][c] : '';
+                  // Sanitize: remove non-printable chars that crash pdf-lib
+                  const cellVal = String(rawVal).replace(/[^\x20-\x7E]/g, ' ').trim();
                   const x = margin + c * colWidth;
                   page.drawRectangle({x, y:y-rowHeight+cellPad, width:colWidth, height:rowHeight, borderColor:PDFLib.rgb(0.8,0.8,0.8), borderWidth:0.5});
-                  const truncated = cellVal.substring(0, Math.floor(colWidth / (fontSize * 0.5)));
+                  const maxChars = Math.floor(colWidth / (fontSize * 0.55));
+                  const truncated = cellVal.substring(0, maxChars);
                   const useFont = r === 0 ? boldFont : font;
-                  page.drawText(truncated, {x:x+cellPad, y:y-fontSize, size:fontSize, font:useFont, color:PDFLib.rgb(0.1,0.1,0.1)});
+                  try {
+                    page.drawText(truncated, {x:x+cellPad, y:y-fontSize, size:fontSize, font:useFont, color:PDFLib.rgb(0.1,0.1,0.1)});
+                  } catch(charErr) {
+                    // Skip cells with encoding issues
+                    page.drawText('...', {x:x+cellPad, y:y-fontSize, size:fontSize, font, color:PDFLib.rgb(0.5,0.5,0.5)});
+                  }
                 }
                 y -= rowHeight;
-                PF.showProg(20 + (r/data.length) * 60);
+                if (r % 50 === 0) PF.showProg(20 + (r/maxRows) * 60);
+              }
+              if (data.length > maxRows) {
+                if (y < margin + 30) { page = doc.addPage([612, 792]); y = 792 - margin; }
+                y -= 20;
+                page.drawText(`... ${data.length - maxRows} more rows (truncated for performance)`, {x:margin, y, size:9, font, color:PDFLib.rgb(0.5,0.5,0.5)});
               }
             }
             PF.showProg(90);
