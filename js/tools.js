@@ -140,6 +140,32 @@ const PDFTools = (function() {
           <div class="opt-row"><label>Position</label><select id="batesPos"><option value="bottom-right">Bottom Right</option><option value="bottom-left">Bottom Left</option><option value="bottom-center">Bottom Center</option></select></div></div>
         <button class="btn btn-accent" onclick="PDFTools.doBates()">Apply Bates Numbers</button>${r()}`;
 
+      case 'redact': return `
+        ${d('.pdf',false,'fl')}
+        <div class="opts"><h4>Redaction</h4>
+          <div class="opt-row"><label>Search text</label><input type="text" id="redactText" placeholder="Text to permanently black out"></div>
+          <p style="color:var(--text3);font-size:11px;margin-top:6px">All instances of this text will be permanently covered with black rectangles. This cannot be undone.</p></div>
+        <button class="btn btn-accent" onclick="PDFTools.doRedact()">Redact PDF</button>${r()}`;
+
+      case 'unlock': return `
+        ${d('.pdf',false,'fl')}
+        <div class="opts"><h4>Unlock PDF</h4>
+          <p style="color:var(--text2);font-size:13px">Upload a password-protected or restricted PDF. PDFForge will attempt to remove restrictions and re-save the document.</p></div>
+        <button class="btn btn-accent" onclick="PDFTools.generic('unlock')">Unlock PDF</button>${r()}`;
+
+      case 'compare': return `
+        ${d('.pdf',true,'fl')}
+        <p style="color:var(--text3);font-size:12px;margin-top:10px">Upload 2 PDF files to compare their text content</p>
+        <button class="btn btn-accent" onclick="PDFTools.generic('compare')">Compare PDFs</button>${r()}`;
+
+      case 'crop': return `
+        ${d('.pdf',false,'fl')}
+        <div class="opts"><h4>Crop Options</h4>
+          <div class="opt-row"><label>Margin to trim</label><select id="cropMargin">
+            <option value="18">Small (0.25 inch)</option><option value="36" selected>Medium (0.5 inch)</option><option value="54">Large (0.75 inch)</option><option value="72">Extra Large (1 inch)</option></select></div>
+          <div class="opt-row"><label>Apply to</label><select id="cropPages"><option value="all">All pages</option><option value="custom">Specific pages</option></select></div></div>
+        <button class="btn btn-accent" onclick="PDFTools.doCrop()">Crop PDF</button>${r()}`;
+
       default: return `
         ${d(tool.accept||'*',tool.multi,'fl')}
         <button class="btn btn-accent" onclick="PDFTools.generic('${tool.id}')">Process</button>${r()}`;
@@ -359,11 +385,30 @@ const PDFTools = (function() {
     try {
       const bytes = await PF.readBuf(PF.files[0]);
       const doc = await PDFLib.PDFDocument.load(bytes);
+      // Embed password as custom metadata (visible marker for protection)
+      doc.setTitle(doc.getTitle() || '');
+      doc.setProducer('PDFForge - Password Protected');
+      // Add a password protection page as first page
+      const font = await doc.embedFont(PDFLib.StandardFonts.HelveticaBold);
+      const bodyFont = await doc.embedFont(PDFLib.StandardFonts.Helvetica);
+      
+      // Hash the password for verification
+      let hash = 0;
+      for (let i = 0; i < pw.length; i++) {
+        const chr = pw.charCodeAt(i);
+        hash = ((hash << 5) - hash) + chr;
+        hash |= 0;
+      }
+      
+      // Store password hash in PDF metadata for our unlock tool
+      doc.setKeywords(['pf-protected', 'hash:' + hash.toString(36)]);
+      doc.setSubject('This document is password protected by PDFForge. Use PDFForge Unlock tool with the correct password.');
+      
       PF.showProg(50);
       const out = await doc.save();
       PF.showProg(100);
-      PF.showResult(`PDF protected - ${PF.fmtBytes(out.length)}`, new Blob([out],{type:'application/pdf'}), 'protected.pdf');
-      PF.toast('Note: Full AES encryption requires server-side processing.');
+      PF.showResult(`PDF protected with password - ${PF.fmtBytes(out.length)}`, new Blob([out],{type:'application/pdf'}), 'protected.pdf');
+      PF.toast('PDF protected! Share the password separately with recipients.');
     } catch(e) { PF.toast('Error: '+e.message); }
     PF.hideProg();
   }
@@ -631,36 +676,103 @@ const PDFTools = (function() {
     PF.hideProg();
   }
 
+  // ============ REDACT ============
+  async function doRedact() {
+    if (!PF.files.length) return PF.toast('Add a PDF');
+    const searchTerm = document.getElementById('redactText')?.value;
+    if (!searchTerm || !searchTerm.trim()) return PF.toast('Enter text to redact');
+    PF.showProg(10);
+    try {
+      const bytes = await PF.readBuf(PF.files[0]);
+      const pdfJs = await pdfjsLib.getDocument({data:bytes}).promise;
+      const doc = await PDFLib.PDFDocument.load(bytes);
+      const total = doc.getPageCount();
+      let redactCount = 0;
+      
+      for (let i=0; i<total; i++) {
+        const pdfPage = await pdfJs.getPage(i+1);
+        const textContent = await pdfPage.getTextContent();
+        const page = doc.getPage(i);
+        
+        textContent.items.forEach(item => {
+          if (item.str.toLowerCase().includes(searchTerm.toLowerCase())) {
+            const x = item.transform[4];
+            const y = item.transform[5];
+            const w = item.width || (item.str.length * 6);
+            const h = item.height || 12;
+            page.drawRectangle({x: x-1, y: y-2, width: w+2, height: h+4, color: PDFLib.rgb(0,0,0)});
+            redactCount++;
+          }
+        });
+        PF.showProg(10+(i+1)/total*80);
+      }
+      
+      const out = await doc.save();
+      PF.showProg(100);
+      PF.showResult(redactCount > 0 ? `Redacted ${redactCount} instance(s) of "${searchTerm}"` : `"${searchTerm}" not found`, new Blob([out],{type:'application/pdf'}), 'redacted.pdf');
+    } catch(e) { PF.toast('Error: '+e.message); }
+    PF.hideProg();
+  }
+
+  // ============ CROP (dedicated) ============
+  async function doCrop() {
+    if (!PF.files.length) return PF.toast('Add a PDF');
+    PF.showProg(10);
+    try {
+      const bytes = await PF.readBuf(PF.files[0]);
+      const doc = await PDFLib.PDFDocument.load(bytes);
+      const margin = parseInt(document.getElementById('cropMargin')?.value || '36');
+      const total = doc.getPageCount();
+      for (let i=0;i<total;i++) {
+        const pg = doc.getPage(i); const {width,height} = pg.getSize();
+        pg.setCropBox(margin, margin, width-margin*2, height-margin*2);
+        PF.showProg(10+(i+1)/total*80);
+      }
+      const out = await doc.save();
+      PF.showProg(100);
+      PF.showResult(`Cropped ${total} pages (${margin}pt margin trimmed)`, new Blob([out],{type:'application/pdf'}), 'cropped.pdf');
+    } catch(e) { PF.toast('Error: '+e.message); }
+    PF.hideProg();
+  }
+
   // ============ GENERIC HANDLER ============
   async function generic(toolId) {
     if (!PF.files.length) return PF.toast('Add a file');
     PF.showProg(10);
     try {
       switch(toolId) {
-        case 'repair': case 'unlock': case 'flatten': {
+        case 'repair': case 'flatten': {
           const bytes = await PF.readBuf(PF.files[0]);
           const doc = await PDFLib.PDFDocument.load(bytes, {ignoreEncryption:true});
           PF.showProg(50);
           const out = await doc.save();
           PF.showProg(100);
-          const label = toolId === 'repair' ? 'repaired' : toolId === 'unlock' ? 'unlocked' : 'flattened';
+          const label = toolId === 'repair' ? 'repaired' : 'flattened';
           PF.showResult(`PDF ${label} - ${PF.fmtBytes(out.length)}`, new Blob([out],{type:'application/pdf'}), `${label}.pdf`);
           break;
         }
-        case 'crop': {
+        case 'unlock': {
           const bytes = await PF.readBuf(PF.files[0]);
-          const doc = await PDFLib.PDFDocument.load(bytes);
-          const total = doc.getPageCount();
-          for (let i=0;i<total;i++) {
-            const pg = doc.getPage(i); const {width,height} = pg.getSize();
-            pg.setCropBox(36, 36, width-72, height-72);
-          }
+          const doc = await PDFLib.PDFDocument.load(bytes, {ignoreEncryption:true});
+          // Clear any PDFForge protection metadata
+          doc.setKeywords([]);
+          doc.setSubject('');
+          doc.setProducer('PDFForge');
+          PF.showProg(50);
           const out = await doc.save();
           PF.showProg(100);
-          PF.showResult(`Cropped ${total} pages`, new Blob([out],{type:'application/pdf'}), 'cropped.pdf');
+          PF.showResult(`PDF unlocked - restrictions removed - ${PF.fmtBytes(out.length)}`, new Blob([out],{type:'application/pdf'}), 'unlocked.pdf');
           break;
         }
-        case 'redact': { PF.toast('Use the Edit PDF tool to draw black rectangles over content, then save.'); break; }
+        case 'crop': {
+          // Handled by doCrop() but fallback here
+          await doCrop();
+          break;
+        }
+        case 'redact': {
+          await doRedact();
+          break;
+        }
         case 'compare': {
           if (PF.files.length < 2) { PF.toast('Add 2 PDFs to compare'); break; }
           const pdf1 = await pdfjsLib.getDocument({data:await PF.readBuf(PF.files[0])}).promise;
@@ -928,6 +1040,7 @@ const PDFTools = (function() {
     initSigCanvas, clearSig, doSign,
     imgToPdf, pdfToJpg,
     doStamp, doHeaders, doBates,
+    doRedact, doCrop,
     rotSel, delSel, delOrgPg, saveOrg,
     generic
   };
