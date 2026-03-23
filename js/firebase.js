@@ -426,10 +426,8 @@ const PFAuth = (function() {
           </div>
         </div>
         <div class="opts" style="margin-top:20px">
-          <h4>Gemini AI Key (Optional)</h4>
-          <div class="opt-row"><label>API Key</label><input type="password" id="geminiKey" placeholder="AIza..." value="${localStorage.getItem('pf_gemini_key') || ''}"></div>
-          <button class="btn btn-ghost" style="margin:8px 0;padding:6px 14px;font-size:12px" onclick="localStorage.setItem('pf_gemini_key',document.getElementById('geminiKey').value);PF.toast('API key saved')">Save Key</button>
-          <p style="color:var(--text3);font-size:11px">Get a free key from <a href="https://makersuite.google.com/app/apikey" target="_blank" style="color:var(--accent)">Google AI Studio</a>. Enables AI Summarize, Chat with PDF, and OCR.</p>
+          <h4>AI Features</h4>
+          <p style="color:var(--text2);font-size:13px">AI Summarize, Chat with PDF, OCR, and Translate are powered by Gemini through Firebase AI Logic. No API key needed.</p>
         </div>
         <div style="display:flex;gap:8px;margin-top:20px">
           <button class="btn btn-ghost" style="margin:0;flex:1;justify-content:center" onclick="PFAuth.signOut();this.closest('.modal-overlay').remove()">Sign Out</button>
@@ -440,32 +438,23 @@ const PFAuth = (function() {
   }
 
   // ===== Gemini AI =====
+  // ===== Gemini AI via Firebase AI Logic =====
   async function callGemini(prompt, maxTokens) {
-    const key = localStorage.getItem('pf_gemini_key');
-    if (!key) {
-      PF.toast('Set your Gemini API key in Profile settings');
-      return null;
-    }
-    
-    try {
-      const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`, {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({
-          contents: [{parts: [{text: prompt}]}],
-          generationConfig: {maxOutputTokens: maxTokens || 2048}
-        })
+    // Wait for Firebase AI to be ready
+    if (!window._firebaseAI) {
+      await new Promise((resolve, reject) => {
+        if (window._firebaseAI) return resolve();
+        const timeout = setTimeout(() => reject(new Error('Firebase AI not loaded')), 8000);
+        window.addEventListener('firebaseAIReady', () => { clearTimeout(timeout); resolve(); }, {once: true});
       });
-      
-      if (!resp.ok) {
-        const err = await resp.json();
-        throw new Error(err.error?.message || 'API error');
-      }
-      
-      const data = await resp.json();
-      return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    }
+
+    try {
+      const model = window._firebaseAI.model;
+      const result = await model.generateContent(prompt);
+      return result.response.text();
     } catch(e) {
-      PF.toast('Gemini AI error: ' + e.message);
+      PF.toast('AI error: ' + e.message);
       return null;
     }
   }
@@ -589,7 +578,7 @@ Answer the latest question:`;
         PF.showProg(10 + (i/total)*40);
       }
       
-      // If very little text found, it might be a scanned PDF - render and use Gemini vision
+      // If very little text found, it might be a scanned PDF - render and use Firebase AI vision
       if (allText.trim().length < 100 && total <= 5) {
         PF.showProg(60);
         PF.toast('Scanned PDF detected. Using AI for text recognition...');
@@ -604,20 +593,17 @@ Answer the latest question:`;
         const imgData = cvs.toDataURL('image/jpeg', 0.9);
         const base64Img = imgData.split(',')[1];
         
-        const key = localStorage.getItem('pf_gemini_key');
-        if (key) {
-          const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({
-              contents: [{parts: [
-                {inlineData: {mimeType: 'image/jpeg', data: base64Img}},
-                {text: 'Extract all visible text from this image. Preserve the layout and formatting as much as possible. Return only the extracted text.'}
-              ]}]
-            })
-          });
-          const data = await resp.json();
-          allText = data.candidates?.[0]?.content?.parts?.[0]?.text || allText;
+        try {
+          if (window._firebaseAI) {
+            const visionModel = window._firebaseAI.model;
+            const result = await visionModel.generateContent([
+              { inlineData: { mimeType: 'image/jpeg', data: base64Img } },
+              'Extract all visible text from this image. Preserve the layout and formatting as much as possible. Return only the extracted text.'
+            ]);
+            allText = result.response.text() || allText;
+          }
+        } catch(visionErr) {
+          console.warn('Vision OCR fallback failed:', visionErr);
         }
       }
       
